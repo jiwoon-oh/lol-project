@@ -120,10 +120,20 @@ def draft_metrics(d: pd.DataFrame) -> pd.DataFrame:
         x, y = k.split("+")
         exp[k] = sum(n_tg[p] * by_patch[p].get(x, 0) * by_patch[p].get(y, 0) for p in n_tg.index)
     # 밴 반응 (챔피언 단위): 상대가 1페이즈(픽 1~3)에 A → 우리 2페이즈 밴(4·5)에 B. 기대 = 그 패치 2페이즈 밴률 (B 가 남아 있을 때)
-    ban2 = d[["patch"]].assign(b2=d["bans"].map(lambda b: [x for x in b[3:5] if x])).explode("b2").dropna()
-    b2rate = ban2.groupby(["patch", "b2"]).size().div(n_tg, level="patch")
-    q = {p: g.droplevel(0).to_dict() for p, g in b2rate.groupby(level=0)}
+    # 점검 E1 (2026-11-06): 기대 밴률의 분모를 "그 팀-경기 2페이즈 밴 때 B 가 남아 있던 경우"로 (전에는 팀-경기 전체 → 기대가 낮아 밴 반응이 약 1.37배 부풀었음)
     champs = sorted(set(k.split("@")[0] for ks in d["picks"] for k in ks))
+    avail, banned = {}, {}
+    for r in d.itertuples():
+        gone = set(c.split("@")[0] for c in r.picks[:3] + r.opp_picks[:3]) | set(x for x in r.bans[:3] + r.opp_bans[:3] if x)
+        mine2 = set(x for x in r.bans[3:5] if x)
+        for b in champs:
+            if b not in gone:
+                avail[(r.patch, b)] = avail.get((r.patch, b), 0) + 1
+                if b in mine2:
+                    banned[(r.patch, b)] = banned.get((r.patch, b), 0) + 1
+    q = {}
+    for (p_, b), n in avail.items():
+        q.setdefault(p_, {})[b] = banned.get((p_, b), 0) / n
     bo, be = {}, {}
     for r in d.itertuples():
         mine2 = set(x for x in r.bans[3:5] if x)
@@ -494,8 +504,26 @@ def main():
     sig = pd.DataFrame({"프로 인식": perceived, "커뮤니티 언급": comm, "듀오 골드": gold_pos, "같이 놂": plays})
     T["n_signals"] = sig.sum(axis=1)
     T["signals"] = sig.apply(lambda r: " · ".join(c for c, v in r.items() if v), axis=1)
-    syn = T[(T["n_signals"] >= 2) & ~gold_neg].sort_values(["n_signals", "n_co"], ascending=False)
+    # 점검 E3 (2026-11-06): 프로 인식과 커뮤니티 언급은 둘 다 '인식'이고 서로 독립이 아님 → 시너지는 효과 근거(듀오 골드·같이 놂)가 1개 이상 있어야.
+    # 인식만 2개인 쌍은 '프로가 자주 묶는 조합 (효과 근거 없음)' 으로 따로
+    n_eff = sig[["듀오 골드", "같이 놂"]].sum(axis=1)
+    n_per = sig[["프로 인식", "커뮤니티 언급"]].sum(axis=1)
+    T["n_effect"], T["n_perceived"] = n_eff, n_per
+    # 동시 픽 lift 정확 구간·p (포아송)
+    from scipy.stats import chi2, poisson
+    o, e = T["n_co"].to_numpy(float), T["exp_co"].to_numpy(float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        T["lift_raw"] = np.where(e > 0, o / e, np.nan)
+        T["lift_lo"] = np.where((e > 0) & (o > 0), chi2.ppf(.025, 2 * o) / 2 / e, 0.0)
+        T["lift_hi"] = np.where(e > 0, chi2.ppf(.975, 2 * o + 2) / 2 / e, np.nan)
+        T["lift_p"] = np.where((e > 0) & (o > 0), poisson.sf(o - 1, e), np.nan)
+        T["ban_p"] = np.where((T["ban_exp"].fillna(0) > 0) & (T["ban_obs"].fillna(0) > 0),
+                              poisson.sf(T["ban_obs"].fillna(0) - 1, T["ban_exp"].fillna(1)), np.nan)
+    ok_ = ~gold_neg & (T["n_signals"] >= 2)
+    syn = T[ok_ & (n_eff >= 1)].sort_values(["n_signals", "n_co"], ascending=False)
+    fav = T[ok_ & (n_eff == 0)].sort_values("n_co", ascending=False)
     H.save_csv(syn, OUT / "m2_combo_synergy.csv")
+    H.save_csv(fav, OUT / "m2_combo_pro_favoured.csv")
     if cfile.exists():
         both_ok = T.dropna(subset=["comm_lift"])
         both_ok = both_ok[(both_ok["exp_co"] >= 1) & (both_ok["comm_both"] >= 3)]
@@ -556,20 +584,28 @@ def main():
           "- 공동 딜 lift = 둘이 같은 희생자에 같이 딜을 넣은 킬 ÷ 기대, 같은 포지션 쌍 평균으로 나눔 (1 보다 크면 같이 노는 편)",
           "- 교전 승률 %p = 같은 경기 안에서 둘 다 낀 교전이 하나만 낀 교전보다 더 이기는 몫 − 같은 포지션 쌍 평균, 축소 값. z = 축소 전 값 ÷ 표준오차",
           "- 솔랭은 호흡을 맞추지 않는 판이라 대회 콤보 효과보다 작게 나올 수 있음. 낌 = 딜 또는 죽음 (도움만 준 경우는 못 셈)", ""]
-    L += ["## [4-c] 의미 있는 시너지 (근거 2개 이상)", "",
-          f"- 근거 4가지: 프로 인식 (동시 픽 {PERCEIVED[0]}회·lift {PERCEIVED[1]} 이상) · 커뮤니티 조합 언급 (조합 단어와 한 문장 {COMM_MIN}회 이상) · "
-          "15분 듀오 골드 (구간 > 0) · 같이 놂 (공동 딜). 골드 손해 쌍은 뺌",
-          f"- 프로 동시 픽 lift ↔ 커뮤니티 동시 언급 lift 순위 상관 {rho_c:.3f} (둘 다 있는 쌍) — 두 인식 근거가 서로 맞는 정도",
-          f"- {len(syn)}쌍 (근거 3개 이상 {int((syn['n_signals'] >= 3).sum())})", "",
-          "| 챔피언 | 같이 | 근거 | 대회 동시 픽 (lift) | 같은 차례 · 밴 반응 | 커뮤니티 조합 언급 | 15분 듀오 골드 [95%] | 공동 딜 lift |",
-          "|---|---|---|---|---|---|---|---|"]
-    for r in syn.to_dict("records"):
-        f2 = lambda v: "—" if pd.isna(v) else f"{v:.2f}"  # noqa: E731
-        duo = "—" if pd.isna(r.get("duo_gold")) else f"{r['duo_gold']:+.0f} [{r['duo_lo']:+.0f}, {r['duo_hi']:+.0f}]"
-        cc = "—" if pd.isna(r.get("comm_combo")) else f"{int(r['comm_combo'])}회 (같이 언급 {int(r['comm_both'])})"
-        L.append(f"| {r['a']} | {r['b']} | {r['signals']} | {int(r['n_co'])} ({r['lift']:.1f}배) | "
-                 f"{f2(r.get('same_turn_ratio'))} · {f2(r.get('ban_lift'))} | {cc} | {duo} | {f2(r.get('joint_lift'))} |")
-    L += [""]
+    def syn_rows(tb):
+        out = []
+        for r in tb.to_dict("records"):
+            f2 = lambda v: "—" if pd.isna(v) else f"{v:.2f}"  # noqa: E731
+            duo = "—" if pd.isna(r.get("duo_gold")) else f"{r['duo_gold']:+.0f} [{r['duo_lo']:+.0f}, {r['duo_hi']:+.0f}]"
+            cc = "—" if pd.isna(r.get("comm_combo")) else f"{int(r['comm_combo'])}회 (같이 언급 {int(r['comm_both'])})"
+            lf = "—" if pd.isna(r.get("lift_raw")) else f"{r['lift_raw']:.1f} [{r['lift_lo']:.1f}, {r['lift_hi']:.1f}] p {r['lift_p']:.0e}"
+            bn = "—" if pd.isna(r.get("ban_p")) else f"{int(r['ban_obs'])}/{r['ban_exp']:.1f} (p {r['ban_p']:.0e})"
+            out.append(f"| {r['a']} | {r['b']} | {r['signals']} | {int(r['n_co'])} · {lf} | {f2(r.get('same_turn_ratio'))} | {bn} | {cc} | {duo} | {f2(r.get('joint_lift'))} |")
+        return out
+
+    head_s = ["| 챔피언 | 같이 | 근거 | 대회 동시 픽 · lift [95%] p | 같은 차례 | 밴 반응 관측/기대 (p) | 커뮤니티 조합 언급 | 15분 듀오 골드 [95%] | 공동 딜 lift |",
+              "|---|---|---|---|---|---|---|---|---|"]
+    L += ["## [4-c] 의미 있는 시너지 (효과 근거 1개 이상 + 근거 합 2개 이상)", "",
+          f"- 근거 4가지: 인식 = 프로 인식 (동시 픽 {PERCEIVED[0]}회·lift {PERCEIVED[1]} 이상) · 커뮤니티 조합 언급 (조합 단어와 한 문장 {COMM_MIN}회 이상) / "
+          "효과 = 15분 듀오 골드 (구간 > 0) · 같이 놂 (공동 딜). 골드 손해 쌍은 뺌",
+          "- 점검 E3: 인식 근거 둘은 서로 독립이 아니라(커뮤니티는 프로 픽을 보고 말함) 인식만 2개인 쌍은 시너지가 아니라 아래 [4-d] 로",
+          f"- 프로 동시 픽 lift ↔ 커뮤니티 동시 언급 lift 순위 상관 {rho_c:.3f} (둘 다 있는 쌍)",
+          f"- {len(syn)}쌍 (근거 3개 이상 {int((syn['n_signals'] >= 3).sum())})", ""] + head_s + syn_rows(syn) + [""]
+    L += ["## [4-d] 프로가 자주 묶는 조합 (인식 근거만, 효과 근거 없음)", "",
+          "- 프로·커뮤니티가 조합으로 보지만 솔랭 골드·공동 딜로는 효과가 확인 안 된 쌍. 상대 예측(M4)에는 쓰고, 추천 가치 근거로는 쓰지 않음", "",
+          f"- {len(fav)}쌍", ""] + head_s + syn_rows(fav) + [""]
     L += role_sections(T)
     (OUT / "m2_combo_eval.md").write_text("\n".join(L), encoding="utf-8")
     log.info("조합 끝 (%.0f초)", time.time() - t0)

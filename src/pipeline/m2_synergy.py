@@ -470,10 +470,8 @@ def main():
     ap.add_argument("--boot", type=int, default=30)
     a = ap.parse_args()
     t0 = time.time()
-    import __main__
     import m2_fights
-    __main__.Hier = M1.Hier  # m1_comp.py 를 직접 실행해 저장한 모델은 __main__.Hier 로 기록돼 있음
-    cfg1 = pd.read_pickle(PROCESSED / "m1" / "m1_model.pkl").params()
+    cfg1 = M1.load_model().params()  # m1_params.json (점검 E4: pickle 대신)
     pro = M1.pro_players()
     solo, pdiff = M1.solo_players()
     ctrl = {"pro_diff": pdiff.to_dict(), "elo_diff": M1.elo(pro).to_dict(), "mastery_diff": M1.mastery(pro).to_dict()}

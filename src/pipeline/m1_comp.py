@@ -214,7 +214,8 @@ def game_rows(players: pd.DataFrame, at_for, ctrl: dict) -> pd.DataFrame:
     d = (b - r).dropna(how="all")
     meta = players.groupby("matchId").agg(league=("league", "first"), day=("day", "first"), patch=("patch", "first"))
     win = players[players["teamId"] == 100].groupby("matchId")["win"].first().rename("blue_win")
-    out = d.join(b[IX].add_prefix("b_")).join(r[IX].add_prefix("r_")).join(meta).join(win)
+    # 팀 값은 19개 성격 모두 저장 (점검 E2: M3 팀 지수용. 상호작용은 IX 만 씀)
+    out = d.join(b[FEATS].add_prefix("b_")).join(r[FEATS].add_prefix("r_")).join(meta).join(win)
     for c in ("pro_diff", "elo_diff", "mastery_diff"):
         out[c] = out.index.map(ctrl.get(c, {})).astype(float)
         out[c] = out[c].fillna(0)
@@ -306,6 +307,35 @@ class Hier:
         return pd.Series(b * self.c_int / self.isd, index=IX_KEYS)
 
 
+PARAMS_FILE = OUT / "m1_params.json"
+
+
+def save_params(m: "Hier") -> None:
+    """모델 설정·표준화 값·계수를 JSON 으로 (pickle 은 실행한 스크립트에 묶여 다른 스크립트에서 못 읽는 문제, 점검 E4)."""
+    import json
+    d = {"params": [float(x) if not isinstance(x, (bool, np.bool_)) else bool(x) for x in m.params()],
+         "FEATS": FEATS, "IX": IX, "ctrl": m.ctrl, "mu": m.mu.tolist(), "sd": m.sd.tolist(),
+         "coef": m.m.coef_[0].tolist(), "intercept": float(m.m.intercept_[0])}
+    if m.c_int > 0:
+        d.update(tmu=m.tmu.tolist(), tsd=m.tsd.tolist(), isd=m.isd.tolist())
+    PARAMS_FILE.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+
+
+def load_model() -> "Hier":
+    """m1_params.json → 예측 가능한 Hier (어느 스크립트에서나)."""
+    import json
+    from types import SimpleNamespace
+    d = json.loads(PARAMS_FILE.read_text(encoding="utf-8"))
+    m = Hier(*d["params"])
+    m.mu, m.sd = np.array(d["mu"]), np.array(d["sd"])
+    if "tmu" in d:
+        m.tmu, m.tsd, m.isd = np.array(d["tmu"]), np.array(d["tsd"]), np.array(d["isd"])
+    lr = LogisticRegression()
+    lr.coef_, lr.intercept_, lr.classes_ = np.array([d["coef"]]), np.array([d["intercept"]]), np.array([0, 1])
+    m.m = lr
+    return m
+
+
 def baseline_side(train: pd.DataFrame, test: pd.DataFrame) -> np.ndarray:
     rate = train.groupby("league")["blue_win"].mean()
     return test["league"].map(rate).fillna(train["blue_win"].mean()).to_numpy()
@@ -343,7 +373,28 @@ def fmt_ci(c, lo, hi, sg) -> str:
     return f"**{t}**" if sg else t
 
 
+def refresh_team_values():
+    """m1_games.csv 의 팀 값(b_·r_) 칸만 19개 성격 전부로 다시 계산 (모델·예측은 그대로). 점검 E2."""
+    pro = pro_players()
+    solo, pdiff = solo_players()
+    ctrl = {"pro_diff": pdiff.to_dict(), "elo_diff": elo(pro).to_dict(), "mastery_diff": mastery(pro).to_dict()}
+    players = pd.concat([solo, pro.drop(columns=["pid"])], ignore_index=True)
+    full = load_attr(M0 / "m0_attributes.csv")
+    folds = {k: load_attr(M0 / f"m0_attributes_fold{k}.csv") for k in range(5)}
+    gs = game_rows(players[players["league"] == "SOLO"], folds, ctrl)
+    gp = game_rows(players[players["league"] != "SOLO"], full, ctrl)
+    tv = pd.concat([gs, gp], ignore_index=True)
+    cols = [f"b_{f}" for f in FEATS] + [f"r_{f}" for f in FEATS]
+    G = pd.read_csv(OUT / "m1_games.csv", dtype={"patch": str, "matchId": str}, low_memory=False)
+    G = G.drop(columns=[c for c in cols if c in G]).merge(tv[["matchId"] + cols], on="matchId", how="left")
+    H.save_csv(G, OUT / "m1_games.csv")
+    log.info("m1_games.csv 팀 값 %d칸 갱신 (%d경기, 빈 값 %d)", len(cols), len(G), int(G[cols].isna().any(axis=1).sum()))
+
+
 def main():
+    if "--team-values" in sys.argv:
+        refresh_team_values()
+        return
     ap = argparse.ArgumentParser()
     ap.add_argument("--boot", type=int, default=60)
     ap.add_argument("--grid-only", action="store_true", help="설정 고르기만 (최종 학습·부트스트랩 생략)")
@@ -494,6 +545,7 @@ def main():
     G["m1_pred"] = final.predict(G)
     H.save_csv(G, OUT / "m1_games.csv")
     pd.to_pickle(final, OUT / "m1_model.pkl")
+    save_params(final)
 
     L += ["## 2. 최종 주효과 계수 (08-25 까지 전부, 조합 성격 1 표준편차 차이당 블루 승 로그 오즈)", "",
           f"- 학습: {len(G):,}경기 (솔랭 {len(gs):,} · 대회 {len(gp):,}). 속성을 패치 행이 아닌 전체 기간·챔피언 행으로 대신한 선수가 있는 경기 {fb:.1%}",
