@@ -266,7 +266,9 @@ def build_rows(a, games, ds_cache, ex_cache, lineup, champs, pgames, weight_of, 
                                           if op_open else np.log(F.EPS))
                 Xs.append([f.get(k, 0.0) for k in ALL])
                 ys.append(int(c == r.cid))
-            rows.append((sid, gid, r.action, np.array(ys, np.int8), np.array(Xs, np.float32), int(r.step), w, T))
+            ctx = {"cands": avail, "own": list(picks[T]), "opp": list(picks[O]), "bans": list(banned), "D": D,
+                   "fp": getattr(r, "pick_order", "") == "fp", "bucket": bucket, "my_open": my_open, "op_open": op_open, "opp_team": O}
+            rows.append((sid, gid, r.action, np.array(ys, np.int8), np.array(Xs, np.float32), int(r.step), w, T, ctx))
             used.add(r.cid)
             if r.action == "pick":
                 picks[T].append((r.cid, r.role if isinstance(r.role, str) else None))
