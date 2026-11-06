@@ -1,0 +1,28 @@
+# 비밀
+.env
+
+# 로컬 설정·압축본
+.claude/
+*.zip
+
+# 자료·결과 (원문 포함, 용량 큼) — 코드·설계 문서·설정만 올림
+data/
+research/*
+!research/config/
+notebooks/
+*.csv
+*.csv.gz
+*.pkl
+*.jsonl
+*.duckdb
+*.parquet
+
+# 대시보드: 만드는 코드·틀만 (생성된 자료·페이지에는 프로필 인용이 들어감)
+dashboard/data.json
+dashboard/career/
+dashboard/t1_scouting.html
+dashboard/player_sample_Doran.html
+
+# 파이썬·주피터
+__pycache__/
+.ipynb_checkpoints/

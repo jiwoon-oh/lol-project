@@ -1,0 +1,173 @@
+# 팀과 별칭 — build_roster.py 생성 (출처: 인벤 노트북 TEAM_ALIASES). exclude 는 야구단·기업 등 다른 뜻 (2026-11-03 추가)
+teams:
+  Gen.G:
+    name_ko: 젠지
+    aliases:
+    - 젠지
+    - GEN
+    - Gen.G
+    players:
+    - Kiin
+    - Canyon
+    - Chovy
+    - Ruler
+    - Duro
+    exclude: []
+  Hanwha Life Esports:
+    name_ko: 한화생명
+    aliases:
+    - 한화생명
+    - 한화
+    - HLE
+    - Hanwha Life Esports
+    players:
+    - Zeus
+    - Kanavi
+    - Zeka
+    - Gumayusi
+    - Delight
+    exclude:
+    - 한화\s*(이글스|그룹|솔루션|오션|에어로)
+    - 이글스
+  T1:
+    name_ko: T1
+    aliases:
+    - T1
+    - 티원
+    - SKT
+    players:
+    - Doran
+    - Oner
+    - Faker
+    - Peyz
+    - Keria
+    exclude:
+    - (?i)\bT1\s*(맵|스크린|terminal)
+  KT Rolster:
+    name_ko: KT
+    aliases:
+    - KT
+    - 케이티
+    - KT Rolster
+    players:
+    - PerfecT
+    - Cuzz
+    - Bdd
+    - FenRir
+    - Effort
+    - Ghost
+    - Jiwoo
+    exclude:
+    - (?i)kt\s*(위즈|wiz|텔레콤|주가|이사회)
+    - 위즈
+  Dplus Kia:
+    name_ko: 디플러스기아
+    aliases:
+    - 디플러스기아
+    - DK
+    - 디플
+    - 디플러스
+    - 담원
+    - 딮기
+    - Dplus Kia
+    players:
+    - Siwoo
+    - Lucid
+    - ShowMaker
+    - Smash
+    - Career
+    exclude:
+    - 기아\s*(타이거즈|자동차|차)
+    - 타이거즈
+  Nongshim RedForce:
+    name_ko: 농심
+    aliases:
+    - 농심
+    - NS
+    - Nongshim RedForce
+    players:
+    - Kingen
+    - Sponge
+    - Scout
+    - Lehends
+    - Diable
+    exclude:
+    - 농심\s*(라면|신라면|주가|그룹|배)
+    - 신라면
+  BNK FEARX:
+    name_ko: 피어엑스
+    aliases:
+    - 피어엑스
+    - BFX
+    - BNK
+    - 폭스
+    - BNK FEARX
+    players:
+    - Clear
+    - Raptor
+    - Daystar
+    - VicLa
+    - Taeyoon
+    - Kellin
+    exclude:
+    - (?i)bnk\s*(금융|은행|부산)
+  HANJIN BRION:
+    name_ko: 브리온
+    aliases:
+    - 브리온
+    - BRO
+    - 한진
+    - HANJIN BRION
+    players:
+    - Casting
+    - GIDEON
+    - Loki
+    - Roamer
+    - Teddy
+    - Namgung
+    exclude:
+    - 한진\s*(그룹|해운|택배|칼)
+  Kiwoom DRX:
+    name_ko: DRX
+    aliases:
+    - DRX
+    - 드알
+    - 키움
+    - KRX
+    - Kiwoom DRX
+    players:
+    - Frog
+    - Rich
+    - Willer
+    - Ucal
+    - LazyFeel
+    - Andil
+    - Aiming
+    exclude:
+    - 키움\s*(히어로즈|증권)
+    - 히어로즈
+  DN SOOPers:
+    name_ko: DN수퍼스
+    aliases:
+    - DN수퍼스
+    - DN
+    - DNS
+    - 수퍼스
+    - 숲퍼스
+    - 든숲
+    - 든프
+    - 든슈
+    - 디엔
+    - 프릭스
+    - 광동
+    - DN SOOPers
+    players:
+    - DuDu
+    - Pyosik
+    - Sharvel
+    - Clozer
+    - deokdam
+    - Life
+    - Peter
+    exclude:
+    - 광동\s*(제약|제약사)

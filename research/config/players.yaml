@@ -1,0 +1,785 @@
+# 대상 선수와 별칭 — build_roster.py 가 생성 (2026-11-03). 손으로 고친 뒤엔 다시 생성하지 말 것
+# 대상: 리서치 기간 LCK 10경기 이상 + 주전. 별칭 출처: 인벤 노트북 v8.8 ROSTER + 본명 + 영문 ID
+# ambiguous: true = 일반 낱말과 겹치는 닉네임 (S4·S5 에서 선수 얘기인지 더 엄격히)
+# inven_search: null = 인벤 검색 데이터 없음 (커뮤니티는 OP.GG·유튜브만)
+players:
+  Clear:
+    name_ko: 클리어
+    real_name: 송현민
+    team: BNK FEARX
+    position: 탑
+    inven_search: Clear
+    games: 111
+    ambiguous: true
+    aliases:
+    - (?<![가-힣])클리어(?!\s*러브)|clear(?!love)
+    - (?i)\bClear\b
+    - 송현민
+    exclude: []
+  Raptor:
+    name_ko: 랩터
+    real_name: 전어진
+    team: BNK FEARX
+    position: 정글
+    inven_search: Raptor
+    games: 111
+    ambiguous: false
+    aliases:
+    - 랩터
+    - (?i)\bRaptor\b
+    - 전어진
+    exclude: []
+  Daystar:
+    name_ko: 데이스타
+    real_name: 유지명
+    team: BNK FEARX
+    position: 미드
+    inven_search: Daystar
+    games: 10
+    ambiguous: false
+    aliases:
+    - 데이스타
+    - (?i)\bDaystar\b
+    - 유지명
+    exclude: []
+  VicLa:
+    name_ko: 빅라
+    real_name: 이대광
+    team: BNK FEARX
+    position: 미드
+    inven_search: VicLa
+    games: 101
+    ambiguous: false
+    aliases:
+    - 빅라
+    - (?i)\bVicLa\b
+    - 이대광
+    exclude: []
+  Diable:
+    name_ko: 디아블
+    real_name: 남대근
+    team: Nongshim RedForce  # 08-25 기준 (시즌 중 이적, 이전: BNK FEARX)
+    position: 원딜
+    inven_search: Diable
+    games: 95
+    ambiguous: false
+    aliases:
+    - 디아블(?!로)|diable
+    - (?i)\bDiable\b
+    - 남대근
+    exclude: []
+  Taeyoon:
+    name_ko: 태윤
+    real_name: 김태윤
+    team: BNK FEARX
+    position: 원딜
+    inven_search: Taeyoon
+    games: 100
+    ambiguous: false
+    aliases:
+    - 태윤
+    - (?i)\bTaeyoon\b
+    - 김태윤
+    exclude: []
+  Kellin:
+    name_ko: 켈린
+    real_name: 김형규
+    team: BNK FEARX
+    position: 서폿
+    inven_search: Kellin
+    games: 111
+    ambiguous: false
+    aliases:
+    - 켈린
+    - 켈황
+    - (?i)\bKellin\b
+    - 김형규
+    exclude: []
+  DuDu:
+    name_ko: 두두
+    real_name: 이동주
+    team: DN SOOPers
+    position: 탑
+    inven_search: DuDu
+    games: 88
+    ambiguous: true
+    aliases:
+    - 두두
+    - (?i)\bDuDu\b
+    - 이동주
+    exclude:
+    - 두두두|두두둥
+  Pyosik:
+    name_ko: 표식
+    real_name: 홍창현
+    team: DN SOOPers
+    position: 정글
+    inven_search: Pyosik
+    games: 68
+    ambiguous: true
+    aliases:
+    - 표식
+    - (?i)\bPyosik\b
+    - 홍창현
+    exclude:
+    - 표식\s*(을|이|만)?\s*(남기|찍|터|중첩|폭발|먹)|증바람\s*표식|표식\s*증강
+  Sharvel:
+    name_ko: 샤벨
+    real_name: 김단우
+    team: DN SOOPers
+    position: 정글
+    inven_search: null
+    games: 21
+    ambiguous: false
+    aliases:
+    - 샤벨
+    - (?i)\bSharvel\b
+    - 김단우
+    exclude: []
+  Clozer:
+    name_ko: 클로저
+    real_name: 이주현
+    team: DN SOOPers
+    position: 미드
+    inven_search: Clozer
+    games: 88
+    ambiguous: false
+    aliases:
+    - 클로저(?!스)|clozer
+    - (?i)\bClozer\b
+    - 이주현
+    exclude: []
+  deokdam:
+    name_ko: 덕담
+    real_name: 서대길
+    team: DN SOOPers
+    position: 원딜
+    inven_search: deokdam
+    games: 84
+    ambiguous: true
+    aliases:
+    - 덕담
+    - (?i)\bdeokdam\b
+    - 서대길
+    exclude: []
+  Life:
+    name_ko: 라이프
+    real_name: 김정민
+    team: DN SOOPers
+    position: 서폿
+    inven_search: Life
+    games: 18
+    ambiguous: true
+    aliases:
+    - (?<![가-힣])라이프|life
+    - (?i)\bLife\b
+    - 김정민
+    exclude:
+    - 라이프\s*스타일|하프\s*라이프|라이프\s*스틸
+  Peter:
+    name_ko: 피터
+    real_name: 정윤수
+    team: DN SOOPers
+    position: 서폿
+    inven_search: Peter
+    games: 62
+    ambiguous: false
+    aliases:
+    - 피터
+    - (?i)\bPeter\b
+    - 정윤수
+    exclude: []
+  Siwoo:
+    name_ko: 시우
+    real_name: 전시우
+    team: Dplus Kia
+    position: 탑
+    inven_search: Siwoo
+    games: 120
+    ambiguous: false
+    aliases:
+    - 시우
+    - (?i)\bSiwoo\b
+    - 전시우
+    exclude: []
+  Lucid:
+    name_ko: 루시드
+    real_name: 최용혁
+    team: Dplus Kia
+    position: 정글
+    inven_search: Lucid
+    games: 117
+    ambiguous: true
+    aliases:
+    - 루시드
+    - (?i)\bLucid\b
+    - 최용혁
+    exclude:
+    - 루시드\s*(드림|모터스|에어)
+  ShowMaker:
+    name_ko: 쇼메이커
+    real_name: 허수
+    team: Dplus Kia
+    position: 미드
+    inven_search: ShowMaker
+    games: 120
+    ambiguous: false
+    aliases:
+    - 쇼메이커
+    - 쇼메
+    - (?i)\bShowMaker\b
+    exclude: []
+  Smash:
+    name_ko: 스매쉬
+    real_name: 신금재
+    team: Dplus Kia
+    position: 원딜
+    inven_search: Smash
+    games: 120
+    ambiguous: false
+    aliases:
+    - 스매쉬
+    - 스매시
+    - (?i)\bSmash\b
+    - 신금재
+    exclude: []
+  Career:
+    name_ko: 커리어
+    real_name: 오형석
+    team: Dplus Kia
+    position: 서폿
+    inven_search: Career
+    games: 120
+    ambiguous: true
+    aliases:
+    - 커리어
+    - 캐리어
+    - (?i)\bCareer\b
+    - 오형석
+    exclude:
+    - (커리어|캐리어)\s*(하이|로우|통산|를\s*쌓|적으로)|역대\s*커리어|우승\s*커리어|선수\s*커리어
+  Kiin:
+    name_ko: 기인
+    real_name: 김기인
+    team: Gen.G
+    position: 탑
+    inven_search: Kiin
+    games: 100
+    ambiguous: false
+    aliases:
+    - 기인
+    - (?i)\bKiin\b
+    - 김기인
+    exclude: []
+  Canyon:
+    name_ko: 캐니언
+    real_name: 김건부
+    team: Gen.G
+    position: 정글
+    inven_search: Canyon
+    games: 100
+    ambiguous: false
+    aliases:
+    - 캐니언
+    - 캐년
+    - 케년
+    - (?i)\bCanyon\b
+    - 김건부
+    exclude: []
+  Chovy:
+    name_ko: 쵸비
+    real_name: 정지훈
+    team: Gen.G
+    position: 미드
+    inven_search: Chovy
+    games: 100
+    ambiguous: false
+    aliases:
+    - 쵸비
+    - (?i)\bChovy\b
+    - 정지훈
+    exclude: []
+  Ruler:
+    name_ko: 룰러
+    real_name: 박재혁
+    team: Gen.G
+    position: 원딜
+    inven_search: Ruler
+    games: 100
+    ambiguous: false
+    aliases:
+    - 룰러
+    - (?i)\bRuler\b
+    - 박재혁
+    exclude: []
+  Duro:
+    name_ko: 듀로
+    real_name: 주민규
+    team: Gen.G
+    position: 서폿
+    inven_search: Duro
+    games: 100
+    ambiguous: false
+    aliases:
+    - 듀로
+    - (?i)\bDuro\b
+    - 주민규
+    exclude: []
+  Casting:
+    name_ko: 캐스팅
+    real_name: 신민제
+    team: HANJIN BRION
+    position: 탑
+    inven_search: Casting
+    games: 93
+    ambiguous: true
+    aliases:
+    - 캐스팅
+    - (?i)\bCasting\b
+    - 신민제
+    exclude: []
+  GIDEON:
+    name_ko: 기드온
+    real_name: 김민성
+    team: HANJIN BRION
+    position: 정글
+    inven_search: GIDEON
+    games: 93
+    ambiguous: false
+    aliases:
+    - 기드온
+    - (?i)\bGIDEON\b
+    - 김민성
+    exclude: []
+  Loki:
+    name_ko: 로키
+    real_name: 이상민
+    team: HANJIN BRION
+    position: 미드
+    inven_search: null
+    games: 17
+    ambiguous: true
+    aliases:
+    - 로키
+    - (?i)\bLoki\b
+    - 이상민
+    exclude:
+    - 로키\s*(산맥|마블|토르)
+  Roamer:
+    name_ko: 로머
+    real_name: 조우진
+    team: HANJIN BRION
+    position: 미드
+    inven_search: Roamer
+    games: 76
+    ambiguous: false
+    aliases:
+    - 로머
+    - (?i)\bRoamer\b
+    - 조우진
+    exclude: []
+  Teddy:
+    name_ko: 테디
+    real_name: 박진성
+    team: HANJIN BRION
+    position: 원딜
+    inven_search: Teddy
+    games: 93
+    ambiguous: false
+    aliases:
+    - 테디
+    - (?i)\bTeddy\b
+    - 박진성
+    exclude: []
+  Namgung:
+    name_ko: 남궁
+    real_name: 남궁성훈
+    team: HANJIN BRION
+    position: 서폿
+    inven_search: Namgung
+    games: 93
+    ambiguous: false
+    aliases:
+    - 남궁
+    - (?i)\bNamgung\b
+    - 남궁성훈
+    exclude: []
+  Zeus:
+    name_ko: 제우스
+    real_name: 최우제
+    team: Hanwha Life Esports
+    position: 탑
+    inven_search: Zeus
+    games: 99
+    ambiguous: false
+    aliases:
+    - 제우스
+    - (?i)\bZeus\b
+    - 최우제
+    exclude: []
+  Kanavi:
+    name_ko: 카나비
+    real_name: 서진혁
+    team: Hanwha Life Esports
+    position: 정글
+    inven_search: Kanavi
+    games: 99
+    ambiguous: false
+    aliases:
+    - 카나비
+    - (?i)\bKanavi\b
+    - 서진혁
+    exclude: []
+  Zeka:
+    name_ko: 제카
+    real_name: 김건우
+    team: Hanwha Life Esports
+    position: 미드
+    inven_search: Zeka
+    games: 99
+    ambiguous: false
+    aliases:
+    - 제카
+    - (?i)\bZeka\b
+    - 김건우
+    exclude: []
+  Gumayusi:
+    name_ko: 구마유시
+    real_name: 이민형
+    team: Hanwha Life Esports
+    position: 원딜
+    inven_search: Gumayusi
+    games: 99
+    ambiguous: false
+    aliases:
+    - 구마유시
+    - 구마
+    - (?i)\bGumayusi\b
+    - 이민형
+    exclude: []
+  Delight:
+    name_ko: 딜라이트
+    real_name: 유환중
+    team: Hanwha Life Esports
+    position: 서폿
+    inven_search: Delight
+    games: 93
+    ambiguous: false
+    aliases:
+    - 딜라이트
+    - 딜라
+    - (?i)\bDelight\b
+    - 유환중
+    exclude: []
+  PerfecT:
+    name_ko: 퍼펙트
+    real_name: 이승민
+    team: KT Rolster
+    position: 탑
+    inven_search: PerfecT
+    games: 102
+    ambiguous: true
+    aliases:
+    - 퍼펙트
+    - (?i)\bPerfecT\b
+    - 이승민
+    exclude:
+    - 퍼펙트\s*(게임|스코어|kda|세트)
+  Cuzz:
+    name_ko: 커즈
+    real_name: 문우찬
+    team: KT Rolster
+    position: 정글
+    inven_search: Cuzz
+    games: 102
+    ambiguous: false
+    aliases:
+    - 커즈
+    - (?i)\bCuzz\b
+    - 문우찬
+    exclude: []
+  Bdd:
+    name_ko: 비디디
+    real_name: 곽보성
+    team: KT Rolster
+    position: 미드
+    inven_search: Bdd
+    games: 102
+    ambiguous: false
+    aliases:
+    - 비디디
+    - 비디
+    - (?i)\bBdd\b
+    - 곽보성
+    exclude: []
+  Aiming:
+    name_ko: 에이밍
+    real_name: 김하람
+    team: Kiwoom DRX  # 08-25 기준 (시즌 중 이적, 이전: KT Rolster)
+    position: 원딜
+    inven_search: Aiming
+    games: 80
+    ambiguous: true
+    aliases:
+    - 에이밍
+    - (?i)\bAiming\b
+    - 김하람
+    exclude:
+    - 에이밍\s*(연습|핵|감도)
+  FenRir:
+    name_ko: 펜리르
+    real_name: 박강준
+    team: KT Rolster
+    position: 원딜
+    inven_search: FenRir
+    games: 13
+    ambiguous: false
+    aliases:
+    - 펜리르
+    - (?i)\bFenRir\b
+    - 박강준
+    exclude: []
+  Effort:
+    name_ko: 에포트
+    real_name: 이상호
+    team: KT Rolster
+    position: 서폿
+    inven_search: Effort
+    games: 85
+    ambiguous: false
+    aliases:
+    - 에포트
+    - (?i)\bEffort\b
+    - 이상호
+    exclude: []
+  Ghost:
+    name_ko: 고스트
+    real_name: 장용준
+    team: KT Rolster
+    position: 서폿
+    inven_search: Ghost
+    games: 11
+    ambiguous: true
+    aliases:
+    - 고스트
+    - (?i)\bGhost\b
+    - 장용준
+    exclude: []
+  Frog:
+    name_ko: 프로그
+    real_name: 이민회
+    team: Kiwoom DRX
+    position: 탑
+    inven_search: Frog
+    games: 19
+    ambiguous: true
+    aliases:
+    - 프로그(?![램래레])|frog
+    - (?i)\bFrog\b
+    - 이민회
+    exclude: []
+  Rich:
+    name_ko: 리치
+    real_name: 이재원
+    team: Kiwoom DRX
+    position: 탑
+    inven_search: Rich
+    games: 77
+    ambiguous: true
+    aliases:
+    - (?<![가-힣])리치|rich
+    - (?i)\bRich\b
+    - 이재원
+    exclude:
+    - 리치\s*베인
+  Willer:
+    name_ko: 윌러
+    real_name: 김정현
+    team: Kiwoom DRX
+    position: 정글
+    inven_search: Willer
+    games: 96
+    ambiguous: false
+    aliases:
+    - 윌러
+    - (?i)\bWiller\b
+    - 김정현
+    exclude: []
+  Ucal:
+    name_ko: 유칼
+    real_name: 손우현
+    team: Kiwoom DRX
+    position: 미드
+    inven_search: Ucal
+    games: 96
+    ambiguous: false
+    aliases:
+    - 유칼
+    - (?i)\bUcal\b
+    - 손우현
+    exclude: []
+  Jiwoo:
+    name_ko: 지우
+    real_name: 정지우
+    team: KT Rolster  # 08-25 기준 (시즌 중 이적, 이전: Kiwoom DRX)
+    position: 원딜
+    inven_search: Jiwoo
+    games: 64
+    ambiguous: true
+    aliases:
+    - (?<![가-힣])지우(?![고다면기겠었지게])|jiwoo
+    - (?i)\bJiwoo\b
+    - 정지우
+    exclude: []
+  LazyFeel:
+    name_ko: 레이지필
+    real_name: ''
+    team: Kiwoom DRX
+    position: 원딜
+    inven_search: LazyFeel
+    games: 41
+    ambiguous: false
+    aliases:
+    - 레이지필
+    - (?i)\bLazyFeel\b
+    exclude: []
+  Andil:
+    name_ko: 안딜
+    real_name: 문관빈
+    team: Kiwoom DRX
+    position: 서폿
+    inven_search: Andil
+    games: 95
+    ambiguous: false
+    aliases:
+    - 안딜
+    - (?i)\bAndil\b
+    - 문관빈
+    exclude: []
+  Kingen:
+    name_ko: 킹겐
+    real_name: 황성훈
+    team: Nongshim RedForce
+    position: 탑
+    inven_search: Kingen
+    games: 86
+    ambiguous: false
+    aliases:
+    - 킹겐
+    - (?i)\bKingen\b
+    - 황성훈
+    exclude: []
+  Sponge:
+    name_ko: 스펀지
+    real_name: 배영준
+    team: Nongshim RedForce
+    position: 정글
+    inven_search: Sponge
+    games: 86
+    ambiguous: true
+    aliases:
+    - 스펀지
+    - 스폰지
+    - (?i)\bSponge\b
+    - 배영준
+    exclude:
+    - 스[펀폰]지\s*(밥|케이크)
+  Scout:
+    name_ko: 스카웃
+    real_name: 이예찬
+    team: Nongshim RedForce
+    position: 미드
+    inven_search: Scout
+    games: 86
+    ambiguous: false
+    aliases:
+    - 스카웃
+    - (?i)\bScout\b
+    - 이예찬
+    exclude: []
+  Lehends:
+    name_ko: 리헨즈
+    real_name: 손시우
+    team: Nongshim RedForce
+    position: 서폿
+    inven_search: Lehends
+    games: 79
+    ambiguous: false
+    aliases:
+    - 리헨즈
+    - (?i)\bLehends\b
+    - 손시우
+    exclude: []
+  Doran:
+    name_ko: 도란
+    real_name: 최현준
+    team: T1
+    position: 탑
+    inven_search: Doran
+    aliases:
+    - 도란
+    - (?i)\bdoran\b
+    - 최현준
+    exclude:
+    - 도란도란
+    - 도란\s?(검|링|방패|템)
+    - (?i)doran[’']?s\s+(blade|ring|shield)
+    - 야구도란
+    games: 109
+  Oner:
+    name_ko: 오너
+    real_name: 문현준
+    team: T1
+    position: 정글
+    inven_search: Oner
+    aliases:
+    - 오너
+    - (?i)\boner\b
+    - 문현준
+    exclude:
+    - 이리\s?오너라
+    - 구단\s?오너
+    - 오너\s?(십|쉽|리스크|일가|경영)
+    games: 106
+  Faker:
+    name_ko: 페이커
+    real_name: 이상혁
+    team: T1
+    position: 미드
+    inven_search: Faker
+    aliases:
+    - 페이커
+    - (?i)\bfaker\b
+    - 이상혁
+    - 대상혁
+    - (?<![가-힣])상혁
+    exclude:
+    - 페이커즈
+    - '@\S*상혁\S*'
+    games: 109
+  Peyz:
+    name_ko: 페이즈
+    real_name: 김수환
+    team: T1
+    position: 원딜
+    inven_search: Peyz
+    games: 109
+    ambiguous: false
+    aliases:
+    - 페이즈
+    - (?i)\bPeyz\b
+    - 김수환
+    exclude: []
+  Keria:
+    name_ko: 케리아
+    real_name: 류민석
+    team: T1
+    position: 서폿
+    inven_search: Keria
+    games: 109
+    ambiguous: false
+    aliases:
+    - 케리아
+    - (?i)\bKeria\b
+    - 류민석
+    exclude: []

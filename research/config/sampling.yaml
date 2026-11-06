@@ -1,0 +1,26 @@
+# S3 커뮤니티 표본 (sample_community.py)
+seed: 20261102
+# 기간 = 리서치 패치 창 (period.yaml, tournament_patches.csv). 배분 = 패치별 고르게 (리서치 12구간: 26.01~26.15 + 26.16 정규)
+# 패치 창 안 자료가 모자라면 다른 패치로 채우지 않고 그대로 적게 둠 (폼 추이 왜곡 방지)
+per_patch: true
+# v1 에서 이미 S4 를 돌린 항목을 같은 조건이면 먼저 뽑음 → S4 재사용 (토큰 절약)
+prefer_extracted: research/claims/_v1
+
+inven:
+  n: 120                 # 선수당 (패치당 10)
+  fill_with_title_only: true   # 본문 있는 글을 먼저 뽑고, 모자라면 제목만 있는 글로 채움
+  min_body_chars: 5
+
+opgg:                    # OP.GG 톡 e스포츠 게시판 (collect_opgg.py 가 research/raw/opgg/posts.jsonl 생성)
+  n: 60                  # 선수당 (패치당 5)
+  max_list_pages: 3000   # discover 상한 (기간 시작보다 오래된 글이 나오면 그 전에 멈춤)
+  fetch_per_patch: 10    # 선수·패치당 본문을 받을 글 수 (표본 5의 2배 여유)
+
+youtube:
+  min_chars: 10          # 이보다 짧은 댓글은 버림 (토큰 절약, "ㅋㅋ 오너" 같은 것)
+  min_hangul_ratio: 0.3  # 한국어 댓글만 (한글 / 전체 글자)
+  groups:
+    # CLAUDE.md 6-1 등급: lck=일반 시청자, team=팬, analysis=분석 채널 시청자
+    lck: {channel_types: [lck], n: 48}          # 패치당 4
+    team: {channel_types: [team], n: 48}        # 패치당 4
+    analysis: {channel_types: [analysis], n: 72}  # 패치당 6

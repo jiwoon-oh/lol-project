@@ -1,0 +1,30 @@
+# S4·S6 (Claude Code 구독으로 실행) 토큰 절약·상한 설정
+# 실행 방식: extract_claims.py prepare 가 에이전트 몫(bundle) 파일을 만들고 → 하위 에이전트가 1번 읽고 1번 씀
+#           → extract_claims.py collect 가 묶음 단위 형식 검증·재사용 주장 합치기
+
+# 이번 실행 토큰 상한 (2026-11-03). 구독 남은 양은 코드가 알 수 없으므로 직접 정한 상한으로 멈춤
+run:
+  id: v2                 # usage.csv 의 run 칸. 새 실행이면 바꿀 것 (v3 ...)
+  account: a1            # usage.csv 의 account 칸. 다른 계정으로 이어하면 바꿀 것 (a2 ...). 상한은 계정 합계
+  token_cap: 33000000    # 2026-11-03: 58명 + 10팀 전체. 1500만 → 2000만 → 3300만으로 상향 (사용자 결정, 남은 작업 추정 약 1,130만). 떨어지면 runbook 대로 이어하기
+  stop_ratio: 0.9        # 누적 + 다음 작업 예상이 상한의 90% 를 넘으면 다음 에이전트를 띄우지 않고 멈춤
+  next_estimate:         # 다음 작업 예상 토큰 (budget --next 에 씀, 도란 실측 후 고칠 것)
+    s4_agent: 90000
+    s6_agent: 120000
+
+s4:
+  batch_size: 12               # 묶음당 자료 수 (CLAUDE.md: 10~15)
+  batches_per_agent: 8         # 에이전트 1개 몫 (약 96건). 묶음들을 파일 1개로 합쳐 1번 읽고 1번 씀 (2026-11-03 결정)
+  reuse_from: research/claims/_v1   # v1 에서 이미 추출한 항목은 다시 돌리지 않음
+  context_sentences: 1         # 별칭 문장 앞뒤로 붙일 문장 수 (원문 전체 대신 이 조각만 넘김)
+  max_snippet_chars: 1200      # 자료 1건당 LLM에 넘기는 최대 글자 수
+  interview:                   # 인터뷰는 본인 발언이 별칭 없는 문장에 많아서 더 넓게
+    context_sentences: 3
+    max_snippet_chars: 2500
+  max_input_chars_per_player: 250000   # 이 값을 넘으면 prepare 가 멈춤 (약 10만~15만 토큰, 한국어 ~1.7자/토큰 가정)
+  chars_per_token: 1.7         # 추정용. 첫 실행 후 실제 값으로 조정
+  retry_on_bad_json: 1
+  model: sonnet
+
+s6:
+  max_claims_per_aspect_in_prompt: 8

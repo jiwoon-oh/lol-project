@@ -1,0 +1,27 @@
+# 공통
+pandas>=2.2
+numpy
+requests>=2.31
+beautifulsoup4>=4.12
+python-dotenv
+pyyaml
+tqdm
+
+# src/pipeline (밴픽 데이터)
+pyarrow>=15
+gdown>=5.2
+mwclient>=0.11
+
+# src/research (선수 프로필 리서치)
+trafilatura
+rapidfuzz
+anthropic
+mcp
+
+# 노트북을 로컬에서 다시 돌릴 때
+duckdb
+kiwipiepy
+scikit-learn
+scipy
+matplotlib
+koreanize-matplotlib
