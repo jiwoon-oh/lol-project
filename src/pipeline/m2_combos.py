@@ -46,7 +46,8 @@ A_LIFT = 3.0         # 동시 픽 lift 축소 (가상 판수)
 A_JOINT = 5.0        # 공동 딜 lift 축소
 PERCEIVED = (5, 1.5)  # 인식 = 대회 동시 픽 5회 이상 & 축소 lift 1.5 이상
 EFFECT_Z = 2.0       # (참고) 경기 안 교전 비교 z — 반분 재현이 안 돼 분류에 쓰지 않음
-JOINT_PLAYS = (1.05, 3.0)  # 같이 놂 = 공동 딜 lift(포지션 대비) 1.05 이상 & z 3 이상
+JOINT_PLAYS = (1.05, 3.0)
+COMM_MIN = 3         # 커뮤니티 조합 언급 = 조합 단어와 한 문장에 3회 이상  # 같이 놂 = 공동 딜 lift(포지션 대비) 1.05 이상 & z 3 이상
 MIN_STRATA = 30      # 효과 판단에 필요한 솔랭 팀-경기 수
 EXAMPLES = [("LeeSin", "Ahri"), ("Camille", "Galio"), ("Ashe", "Seraphine"), ("LeeSin", "Orianna"), ("LeeSin", "JarvanIV")]
 
@@ -462,6 +463,14 @@ def main():
     T = dm.merge(we[["key", "beta", "role_beta", "delta", "delta_shrunk", "se", "z", "n_tg", "n_fight", "n_both"]], on="key", how="outer")
     T = T.merge(jd[["key", "joint_lift", "joint_z", "obs", "exp"]].rename(columns={"obs": "joint_obs", "exp": "joint_exp"}), on="key", how="left")
     T = T.merge(duo_gold(), on="key", how="left")
+    # 커뮤니티 동시 언급 (m2_community.py, 챔피언 쌍 단위 → 포지션 붙은 쌍 모두에)
+    cfile = OUT / "m2_combo_community.csv"
+    if cfile.exists():
+        cm = pd.read_csv(cfile)
+        cm["ck"] = [pair_key(x, y) for x, y in zip(cm["a"], cm["b"])]
+        T["ck"] = T["key"].map(lambda k: pair_key(*[x.split("@")[0] for x in k.split("+")]))
+        T = T.merge(cm[["ck", "n_both", "n_combo", "comm_lift"]].rename(columns={"n_both": "comm_both", "n_combo": "comm_combo"}),
+                    on="ck", how="left")
     T["role"] = T["key"].map(lambda k: "+".join(sorted(x.split("@")[1] for x in k.split("+"))))
     T[["n_co", "exp_co"]] = T[["n_co", "exp_co"]].fillna(0)
     T["lift"] = T["lift"].fillna((T["n_co"] + A_LIFT) / (T["exp_co"] + A_LIFT))
@@ -480,6 +489,19 @@ def main():
         ["검증된 콤보 (골드)", "인식 · 골드 손해", "인식 · 같이 놂", "인식만", "인식 (솔랭 근거 부족)", "숨은 콤보 (골드)"], "")
     T["fight_pp"] = T["delta_shrunk"] * 100
     keep = perceived | gold_pos
+    # 의미 있는 시너지 = 서로 다른 근거 4가지 중 2개 이상 (프로 인식 · 커뮤니티 조합 언급 · 15분 듀오 골드 · 같이 놂)
+    comm = T.get("comm_combo", pd.Series(0, index=T.index)).fillna(0) >= COMM_MIN
+    sig = pd.DataFrame({"프로 인식": perceived, "커뮤니티 언급": comm, "듀오 골드": gold_pos, "같이 놂": plays})
+    T["n_signals"] = sig.sum(axis=1)
+    T["signals"] = sig.apply(lambda r: " · ".join(c for c, v in r.items() if v), axis=1)
+    syn = T[(T["n_signals"] >= 2) & ~gold_neg].sort_values(["n_signals", "n_co"], ascending=False)
+    H.save_csv(syn, OUT / "m2_combo_synergy.csv")
+    if cfile.exists():
+        both_ok = T.dropna(subset=["comm_lift"])
+        both_ok = both_ok[(both_ok["exp_co"] >= 1) & (both_ok["comm_both"] >= 3)]
+        rho_c = spearmanr(np.log(both_ok["lift"]), np.log(both_ok["comm_lift"])).correlation if len(both_ok) > 10 else np.nan
+    else:
+        rho_c = np.nan
     H.save_csv(T.sort_values(["class", "n_co"], ascending=[True, False]), OUT / "m2_combo_table.csv")
     H.save_csv(dm, OUT / "m2_combo_draft.csv")
     H.save_csv(we, OUT / "m2_combo_fight.csv")
@@ -534,6 +556,20 @@ def main():
           "- 공동 딜 lift = 둘이 같은 희생자에 같이 딜을 넣은 킬 ÷ 기대, 같은 포지션 쌍 평균으로 나눔 (1 보다 크면 같이 노는 편)",
           "- 교전 승률 %p = 같은 경기 안에서 둘 다 낀 교전이 하나만 낀 교전보다 더 이기는 몫 − 같은 포지션 쌍 평균, 축소 값. z = 축소 전 값 ÷ 표준오차",
           "- 솔랭은 호흡을 맞추지 않는 판이라 대회 콤보 효과보다 작게 나올 수 있음. 낌 = 딜 또는 죽음 (도움만 준 경우는 못 셈)", ""]
+    L += ["## [4-c] 의미 있는 시너지 (근거 2개 이상)", "",
+          f"- 근거 4가지: 프로 인식 (동시 픽 {PERCEIVED[0]}회·lift {PERCEIVED[1]} 이상) · 커뮤니티 조합 언급 (조합 단어와 한 문장 {COMM_MIN}회 이상) · "
+          "15분 듀오 골드 (구간 > 0) · 같이 놂 (공동 딜). 골드 손해 쌍은 뺌",
+          f"- 프로 동시 픽 lift ↔ 커뮤니티 동시 언급 lift 순위 상관 {rho_c:.3f} (둘 다 있는 쌍) — 두 인식 근거가 서로 맞는 정도",
+          f"- {len(syn)}쌍 (근거 3개 이상 {int((syn['n_signals'] >= 3).sum())})", "",
+          "| 챔피언 | 같이 | 근거 | 대회 동시 픽 (lift) | 같은 차례 · 밴 반응 | 커뮤니티 조합 언급 | 15분 듀오 골드 [95%] | 공동 딜 lift |",
+          "|---|---|---|---|---|---|---|---|"]
+    for r in syn.to_dict("records"):
+        f2 = lambda v: "—" if pd.isna(v) else f"{v:.2f}"  # noqa: E731
+        duo = "—" if pd.isna(r.get("duo_gold")) else f"{r['duo_gold']:+.0f} [{r['duo_lo']:+.0f}, {r['duo_hi']:+.0f}]"
+        cc = "—" if pd.isna(r.get("comm_combo")) else f"{int(r['comm_combo'])}회 (같이 언급 {int(r['comm_both'])})"
+        L.append(f"| {r['a']} | {r['b']} | {r['signals']} | {int(r['n_co'])} ({r['lift']:.1f}배) | "
+                 f"{f2(r.get('same_turn_ratio'))} · {f2(r.get('ban_lift'))} | {cc} | {duo} | {f2(r.get('joint_lift'))} |")
+    L += [""]
     L += role_sections(T)
     (OUT / "m2_combo_eval.md").write_text("\n".join(L), encoding="utf-8")
     log.info("조합 끝 (%.0f초)", time.time() - t0)
