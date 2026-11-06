@@ -44,7 +44,7 @@ NEW_PICK = ["syn_own", "counter_resp", "sub_lift", "pool_rank", "solo_surge", "m
 NEW_BAN = ["block_combo", "block_counter", "ban_resp", "target", "opp_open_role", "sub_lift", "pool_rank", "solo_surge", "meta_rank"]
 REACTIVE = {"syn_own", "counter_resp", "sub_lift", "block_combo", "block_counter", "ban_resp", "target", "opp_open_role"}
 A23 = {"pool_rank", "solo_surge"}
-ALL = sorted(set(F.ALL_FEATS) | set(NEW_PICK) | set(NEW_BAN))
+ALL = sorted(set(F.ALL_FEATS) | set(NEW_PICK) | set(NEW_BAN) | {"win_value"})  # win_value = M4 1차 (m4_model.py)
 PHASE = lambda step: "ban1" if step <= 6 else ("pick1" if step <= 12 else ("ban2" if step <= 16 else "pick2"))  # noqa: E731
 
 
@@ -170,7 +170,9 @@ def day_extras(D, pro_pick, sq):
 
 
 # ---------------------------------------------------------------- 단계 × 후보 행
-def build_rows(a, games, ds_cache, ex_cache, lineup, champs, pgames, weight_of):
+def build_rows(a, games, ds_cache, ex_cache, lineup, champs, pgames, weight_of, wv=None):
+    """wv: (챔피언, 포지션) → 이길 가치 (로그 오즈). 없으면 0. 행 = (단계 id, 경기, 밴/픽, 정답, 특징, 단계, 가중, 팀)."""
+    wv = wv or {}
     cum = Cum()
     pi = 0
     rows, sid = [], 0
@@ -243,6 +245,8 @@ def build_rows(a, games, ds_cache, ex_cache, lineup, champs, pgames, weight_of):
                 f["meta_x_game"] = f["meta"] * gfac
                 # --- 1차 추가
                 f["meta_rank"] = -np.log(meta_rank[c])
+                roles_wv = my_open if r.action == "pick" else op_open
+                f["win_value"] = max([wv.get((c, ro), 0.0) for ro in roles_wv] or [0.0])
                 f["sub_lift"] = float(np.mean([cum.sub_lift(b, c) for b in banned])) if banned else 0.0
                 pl_for = players if r.action == "pick" else opp_open_players
                 f["pool_rank"] = max([1.0 / rem_rank[(p, c)] for p in pl_for if (p, c) in rem_rank] or [0.0])
@@ -262,7 +266,7 @@ def build_rows(a, games, ds_cache, ex_cache, lineup, champs, pgames, weight_of):
                                           if op_open else np.log(F.EPS))
                 Xs.append([f.get(k, 0.0) for k in ALL])
                 ys.append(int(c == r.cid))
-            rows.append((sid, gid, r.action, np.array(ys, np.int8), np.array(Xs, np.float32), int(r.step), w))
+            rows.append((sid, gid, r.action, np.array(ys, np.int8), np.array(Xs, np.float32), int(r.step), w, T))
             used.add(r.cid)
             if r.action == "pick":
                 picks[T].append((r.cid, r.role if isinstance(r.role, str) else None))
