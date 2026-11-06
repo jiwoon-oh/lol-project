@@ -218,6 +218,83 @@ def solo_events():
     return F, K
 
 
+EV_CACHE_LOC = PROCESSED / "m2" / "m2_combo_events_loc.pkl"
+FIGHT_RADIUS = 2500  # 같은 교전 = 15초 안 & 교전 중심에서 이 거리 안 (맵 약 15,000 × 15,000)
+
+
+def solo_events_loc():
+    """위치 기반 (2026-11-06 2차): timeline_lite 킬 기록 [초, 킬러, 희생자, [어시스트], x, y, {딜 준 id: …}, n].
+    교전 = 시간(15초) + 장소(중심에서 FIGHT_RADIUS) 로 묶음 → 같은 시각 다른 라인 싸움은 따로.
+    낌 = 킬러 · 어시스트(딜·CC·보호막 등 라이엇 기준) · 딜 준 사람 · 희생자."""
+    if EV_CACHE_LOC.exists():
+        return pd.read_pickle(EV_CACHE_LOC)
+    import m2_fights
+    gold = m2_fights.team_gold()
+    mins = np.array([0] + list(gold.columns), dtype=float) * 60
+    F, K = [], []
+    files = sorted(glob.glob(str(H.LITE / "*.json.gz")))
+    for n, f in enumerate(files, 1):
+        mid = Path(f).name[:-8]
+        try:
+            tl = json.loads(gzip.decompress(Path(f).read_bytes()))
+            info = json.load(gzip.open(H.MATCH_DIR / f"{mid}.json.gz"))["info"]
+        except Exception:
+            continue
+        if tl.get("v", 1) < 3 or info.get("queueId") != 420:
+            continue
+        where = {p["participantId"]: (p["teamId"], POS.index(p["teamPosition"])) for p in info["participants"]
+                 if p.get("teamPosition") in POS}
+        if len(where) != 10:
+            continue
+        g = gold.loc[mid].to_numpy(float) if mid in gold.index else None
+        open_f, done = [], []
+        for kl in sorted(tl["kills"], key=lambda x: x[0]):
+            t, killer, victim, assists, x, y, dmg = kl[0], kl[1], kl[2], kl[3] or [], kl[4], kl[5], kl[6] or {}
+            if victim not in where or x is None:
+                continue
+            still = []
+            for fi in open_f:
+                (done if t - fi["last"] > FIGHT_GAP else still).append(fi)
+            open_f = still
+            best = None
+            for fi in open_f:
+                d = np.hypot(x - fi["cx"], y - fi["cy"])
+                if d <= FIGHT_RADIUS and (best is None or d < best[0]):
+                    best = (d, fi)
+            if best is None:
+                fi = {"t0": t, "last": t, "cx": x, "cy": y, "n": 0, "k": {100: 0, 200: 0}, "pres": {100: 0, 200: 0}}
+                open_f.append(fi)
+            else:
+                fi = best[1]
+            vt, vp = where[victim]
+            kt = 300 - vt
+            m = 0
+            for q in [killer] + list(assists) + [int(k) for k in dmg]:
+                if q in where and where[q][0] == kt:
+                    m |= 1 << where[q][1]
+            fi["k"][kt] += 1
+            fi["pres"][kt] |= m
+            fi["pres"][vt] |= 1 << vp
+            fi["cx"] = (fi["cx"] * fi["n"] + x) / (fi["n"] + 1)
+            fi["cy"] = (fi["cy"] * fi["n"] + y) / (fi["n"] + 1)
+            fi["n"] += 1
+            fi["last"] = t
+            K.append((mid, kt, m))
+        for fi in done + open_f:
+            if fi["n"] >= 2 and fi["k"][100] != fi["k"][200]:
+                gd = np.nan
+                if g is not None:
+                    ok = ~np.isnan(np.r_[0.0, g])
+                    gd = np.interp(fi["t0"], mins[ok], np.r_[0.0, g][ok])
+                F.append((mid, fi["t0"], fi["k"][100], fi["k"][200], fi["pres"][100], fi["pres"][200], gd))
+        if n % 5000 == 0:
+            log.info("조합 이벤트 (위치) %d/%d", n, len(files))
+    F = pd.DataFrame(F, columns=["matchId", "t", "blue_k", "red_k", "pres_b", "pres_r", "gold_diff"])
+    K = pd.DataFrame(K, columns=["matchId", "team", "mask"])
+    pd.to_pickle((F, K), EV_CACHE_LOC)
+    return F, K
+
+
 PAIRS = [(i, j) for i in range(5) for j in range(i + 1, 5)]
 
 
@@ -358,7 +435,7 @@ def main():
     flag_pre = (v["n_co"] >= PERCEIVED[0]) & (v["lift"] >= PERCEIVED[1])
     post_lift = lambda m: v.loc[m, "n_co_post"].sum() / v.loc[m, "exp_co_post"].sum()  # noqa: E731
     # [2]
-    F, K = solo_events()
+    F, K = solo_events_loc() if "--dmg" not in sys.argv else solo_events()  # 기본 = 위치 기반 (2차)
     solo, _ = M1.solo_players()
     keys = team_keys(solo)
     jd = joint_damage(K, keys)
@@ -420,7 +497,9 @@ def main():
             "|---|---|---|---|---|---|---|---|---|"]
     L = ["# M2 조합 찾기 — 인식(프로 밴픽) × 효과(솔랭 교전)", "",
          f"- [1] 대회 OE 5리그 팀-경기 {len(d):,} (08-25 까지), 같은 팀 챔피언@포지션 쌍 {len(dm):,}",
-         f"- [2] 솔랭 교전 {len(F):,} (킬 2개 이상 · 킬 수 갈림) · 킬 {len(K):,}, 교전 × 쌍 행 {len(R):,}",
+         f"- [2] 솔랭 교전 {len(F):,} (킬 2개 이상 · 킬 수 갈림) · 킬 {len(K):,}, 교전 × 쌍 행 {len(R):,}. "
+         + ("교전 = 15초 + 딜 기준 낌 (1차, `--dmg`)" if "--dmg" in sys.argv else
+            f"**위치 기반 (2차)**: 교전 = 15초 안 & 중심에서 {FIGHT_RADIUS} 안, 낌 = 킬러·어시스트·딜·희생자. 1차(딜 기준) 결과 `combos/_v1_dmg/`"),
          f"- 인식 = 대회 동시 픽 {PERCEIVED[0]}회 이상 & 축소 lift {PERCEIVED[1]} 이상. 효과 = 15분 듀오 골드(M2 3차, 평가 패치 검증) 구간 > 0. "
          f"같이 놂 = 공동 딜 lift {JOINT_PLAYS[0]} 이상 & z {JOINT_PLAYS[1]} 이상 (솔랭 팀-경기 {MIN_STRATA} 이상)",
          "- **경기 안 교전 비교는 경기 반분 재현이 안 됨(아래 [2]) → 분류에 쓰지 않고 참고 칸으로만 둠**", "",
