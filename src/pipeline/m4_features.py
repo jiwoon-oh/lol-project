@@ -203,7 +203,7 @@ def build_rows(a, games, ds_cache, lineup, champs):
                 f["meta_x_game"] = f["meta"] * gfac
                 Xs.append([f[k] for k in ALL_FEATS])
                 ys.append(int(c == r.cid))
-            rows.append((sid, gid, r.action, np.array(ys, np.int8), np.array(Xs, np.float32)))
+            rows.append((sid, gid, r.action, np.array(ys, np.int8), np.array(Xs, np.float32), int(r.step), bucket))
             used.add(r.cid)
             if r.action == "pick" and isinstance(r.role, str):
                 filled[r.team].add(r.role)
@@ -244,17 +244,20 @@ def fit_clogit(sid, y, X, lam=1.0):
         g = X.T @ (y - p)
         return -ll + 0.5 * lam * b @ b, -g + lam * b
     r = minimize(f, np.zeros(X.shape[1]), jac=True, method="L-BFGS-B")
-    return r.x
+    sizes = np.bincount(grp)
+    info = {"success": bool(r.success), "iters": int(r.nit), "nll_per_step": float(r.fun) / G,
+            "null_nll_per_step": float(np.log(sizes).mean()), "train_steps": int(G)}  # 무작위(균등) 모델의 로그 손실 = log(후보 수)
+    return r.x, info
 
 
 def ranks(sid, y, score):
     out = []
     df = pd.DataFrame({"sid": sid, "y": y, "s": score})
-    for _, g in df.groupby("sid"):
+    for _, g in df.groupby("sid"):  # _ = 단계 id
         if g["y"].sum() != 1:
             continue
         v = g.loc[g["y"] == 1, "s"].iloc[0]
-        out.append((1 + (g["s"] > v).sum() + 0.5 * ((g["s"] == v).sum() - 1), len(g)))
+        out.append((1 + (g["s"] > v).sum() + 0.5 * ((g["s"] == v).sum() - 1), len(g), _))
     return np.array(out)
 
 
@@ -296,7 +299,7 @@ def main():
     rows = build_rows(a, all_games, ds_cache, lineup, champs)
     log.info("단계 × 후보 행 %d (%.0f초)", len(rows), time.time() - t0)
 
-    res, coefs = [], {}
+    res, coefs, rank_rows = [], {}, []
     for name, gids in sets.items():
         start = min(gday[g] for g in gids)
         train = [g for g in all_games if gday[g] < start]
@@ -306,16 +309,49 @@ def main():
             te = [r for r in rows if r[1] in gids]
             sid, y, X, _ = to_arrays(tr, action, feats)
             mu, sd = X.mean(0), X.std(0) + 1e-9
-            b = fit_clogit(sid, y, (X - mu) / sd)
+            b, info = fit_clogit(sid, y, (X - mu) / sd)
             coefs[(name, action)] = dict(zip(feats, b))
             sid2, y2, X2, _ = to_arrays(te, action, feats)
             rk = ranks(sid2, y2, ((X2 - mu) / sd) @ b)
+            # 학습 점검: 학습 세트 성적, 평가 세트 로그 손실, 정답을 섞은 대조 (학습할 게 없으면 무작위 수준이어야 함)
+            rk_tr = ranks(sid, y, ((X - mu) / sd) @ b)
+            Zt = ((X2 - mu) / sd) @ b
+            _, g2 = np.unique(sid2, return_inverse=True)
+            zmax = np.zeros(g2.max() + 1)
+            np.maximum.at(zmax, g2, Zt)
+            lse = np.log(np.bincount(g2, np.exp(Zt - zmax[g2]))) + zmax
+            te_nll = float(-(Zt[y2 == 1] - lse[g2[y2 == 1]]).mean())
+            _, gtr = np.unique(sid, return_inverse=True)
+            first = np.r_[0, np.flatnonzero(np.diff(gtr)) + 1]
+            sizes = np.diff(np.r_[first, len(gtr)])
+
+            def nll_of(bb):
+                z = ((X2 - mu) / sd) @ bb
+                zm = np.zeros(g2.max() + 1)
+                np.maximum.at(zm, g2, z)
+                ls = np.log(np.bincount(g2, np.exp(z - zm[g2]))) + zm
+                return float(-(z[y2 == 1] - ls[g2[y2 == 1]]).mean())
+            sh_nll = []
+            for seed in range(5):
+                rng = np.random.default_rng(seed)
+                ysh = np.zeros_like(y)
+                ysh[first + (rng.random(len(first)) * sizes).astype(int)] = 1
+                bsh, _ = fit_clogit(sid, ysh, (X - mu) / sd)
+                sh_nll.append(nll_of(bsh))
+            rk_sh = np.array([[np.nan]])
             res.append({"set": name, "action": action, "n_train_games": len(train), "steps": len(rk),
                         "top1": (rk[:, 0] <= 1).mean(), "top3": (rk[:, 0] <= 3).mean(), "top5": (rk[:, 0] <= 5).mean(),
-                        "MRR": (1 / rk[:, 0]).mean()})
+                        "MRR": (1 / rk[:, 0]).mean(), "train_top5": (rk_tr[:, 0] <= 5).mean(),
+                        "shuffled_nll": float(np.mean(sh_nll)), "test_nll": te_nll, **info})
+            meta_ = {r[0]: (r[5], r[6]) for r in te}
+            for rank_, n_, sid_ in rk:
+                rank_rows.append({"set": name, "action": action, "step": meta_[sid_][0], "bucket": meta_[sid_][1],
+                                  "rank": rank_, "n_avail": n_})
         log.info("  %s 끝 (%.0f초)", name, time.time() - t0)
     R = pd.DataFrame(res)
     H.save_csv(R, OUT / "m4_v0_eval.csv")
+    RK = pd.DataFrame(rank_rows)
+    H.save_csv(RK, OUT / "m4_v0_ranks.csv")
     C = pd.DataFrame(coefs).T
     H.save_csv(C.reset_index(), OUT / "m4_v0_coefs.csv")
     base = pd.read_csv(OUT / "m4_baseline_ranks.csv")
@@ -345,6 +381,32 @@ def main():
         L += ["", f"- **{'픽' if action == 'pick' else '밴'} 세 세트 합**: top1 {(rr['top1'] * w).sum():.1%} · top3 {(rr['top3'] * w).sum():.1%} · "
               f"top5 {(rr['top5'] * w).sum():.1%} · MRR {(rr['MRR'] * w).sum():.3f} (기준선 {(bb['rank'] <= 1).mean():.1%} · "
               f"{(bb['rank'] <= 3).mean():.1%} · {(bb['rank'] <= 5).mean():.1%} · {(1 / bb['rank']).mean():.3f})"]
+    L += ["", "## 학습 점검", "",
+          "- 로그 손실 = 정답 후보에 준 확률의 −log 평균 (단계당). 무작위 = log(후보 수) ≈ 4.8. 낮을수록 좋음",
+          "- 정답 섞기 대조 = 학습 자료의 정답을 후보 중 아무거나로 바꿔 학습(시드 5개) → 평가 로그 손실. 진짜 신호를 배웠다면 이 값은 무작위(≈ 4.8) 근처여야 함",
+          "", "| 세트 | 종류 | 수렴 | 반복 | 학습 로그 손실 (무작위) | 평가 로그 손실 | 학습 top5 | 평가 top5 | 정답 섞기 대조 평가 로그 손실 |",
+          "|---|---|---|---|---|---|---|---|---|"]
+    for r in R.itertuples():
+        L.append(f"| {r.set} | {'픽' if r.action == 'pick' else '밴'} | {'예' if r.success else '아니오'} | {r.iters} | "
+                 f"{r.nll_per_step:.3f} ({r.null_nll_per_step:.3f}) | {r.test_nll:.3f} | {r.train_top5:.1%} | {r.top5:.1%} | {r.shuffled_nll:.3f} |")
+    ph = {"b1": "1밴 페이즈 (1~6)", "p1": "1픽 페이즈 (7~12)", "p23": "1픽 페이즈 (7~12)", "p45": "1픽 페이즈 (7~12)",
+          "p67": "1픽 페이즈 (7~12)", "b2": "2밴 페이즈 (13~16)", "p89": "2픽 페이즈 (17~20)", "p10": "2픽 페이즈 (17~20)"}
+    RK["phase"] = np.where(RK["step"] <= 6, "1밴 페이즈 (1~6)", np.where(RK["step"] <= 12, "1픽 페이즈 (7~12)",
+                           np.where(RK["step"] <= 16, "2밴 페이즈 (13~16)", "2픽 페이즈 (17~20)")))
+    bl = base[base["method"].isin(["B1", "B4"])].copy()
+    bl = bl[((bl["action"] == "pick") & (bl["method"] == "B4")) | ((bl["action"] == "ban") & (bl["method"] == "B1"))]
+    bl["phase"] = np.where(bl["step"] <= 6, "1밴 페이즈 (1~6)", np.where(bl["step"] <= 12, "1픽 페이즈 (7~12)",
+                           np.where(bl["step"] <= 16, "2밴 페이즈 (13~16)", "2픽 페이즈 (17~20)")))
+    L += ["", "## 페이즈별 (리허설 3세트 합)", "", "| 페이즈 | 단계 수 | 후보 수 | top1 | top3 | top5 | MRR | 기준선 top1 · top5 |", "|---|---|---|---|---|---|---|---|"]
+    for p_, g in RK.groupby("phase"):
+        bb = bl[bl["phase"] == p_]
+        L.append(f"| {p_} | {len(g)} | {g['n_avail'].mean():.0f} | {(g['rank'] <= 1).mean():.1%} | {(g['rank'] <= 3).mean():.1%} | "
+                 f"{(g['rank'] <= 5).mean():.1%} | {(1 / g['rank']).mean():.3f} | {(bb['rank'] <= 1).mean():.1%} · {(bb['rank'] <= 5).mean():.1%} |")
+    L += ["", "## 단계별 (1~20, 리허설 3세트 합)", "", "| 단계 | 종류 | 후보 수 | top1 | top3 | top5 | 기준선 top5 |", "|---|---|---|---|---|---|---|"]
+    for st, g in RK.groupby("step"):
+        bb = bl[bl["step"] == st]
+        L.append(f"| {st} | {'밴' if g['action'].iloc[0] == 'ban' else '픽'} | {g['n_avail'].mean():.0f} | {(g['rank'] <= 1).mean():.1%} | "
+                 f"{(g['rank'] <= 3).mean():.1%} | {(g['rank'] <= 5).mean():.1%} | {(bb['rank'] <= 5).mean():.1%} |")
     L += ["", "## 계수 (표준화 1 SD 당, 세트별 학습)", "", "| 특징 | " + " | ".join(f"{s} {a_}" for s, a_ in C.index) + " |",
           "|---|" + "---|" * len(C)]
     for f_ in sorted(set(FEATS_PICK) | set(FEATS_BAN)):
