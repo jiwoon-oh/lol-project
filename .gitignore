@@ -20,7 +20,8 @@ notebooks/
 # 대시보드: 만드는 코드·틀만 (생성된 자료·페이지에는 프로필 인용이 들어감)
 dashboard/data.json
 dashboard/career/
-dashboard/t1_scouting.html
+dashboard/report.html
+dashboard/index.html
 dashboard/player_sample_Doran.html
 
 # 파이썬·주피터

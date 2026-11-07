@@ -1,21 +1,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>T1 스카우팅 룸</title>
+<title>2026 LCK 전력 리포트</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+
 <style>
+@font-face{font-family:"NoonnuBasicGothic";src:url("fonts/NoonnuBasicGothicRegular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
 /* Layout: one dark scouting room; each team repaints the same room with its own colors.
    Cover (wordmark + five portraits) -> league table -> FM-style player sheet. */
 :root{
   --bg:#0d0d10; --panel:#16161b; --panel-2:#1d1d24; --line:#2a2a33;
   --fg:#f1f0ee; --mute:#9a98a3; --dim:#6b6975;
-  --a:#e4002b; --a-ink:#ffffff; --b:#1a0a0d; --c:#f2d49b;
+  --a:#e4002b; --a-ink:#ffffff; --b:#1a0a0d; --c:#e4002b;
   --good:#5fd38a; --ok:#e7c35a; --bad:#ef6a5b;
-  --display:"Black Han Sans","IBM Plex Sans KR",system-ui,sans-serif;
-  --body:"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --display:"NoonnuBasicGothic",system-ui,"Malgun Gothic",sans-serif;
+  --body:"NoonnuBasicGothic",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  --mono:"NoonnuBasicGothic",ui-monospace,Consolas,monospace;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -28,14 +27,14 @@ a{color:inherit}
 /* top bar */
 .topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--bg)}
-.topbar .wrap{display:flex;align-items:center;gap:14px;padding-block:10px;flex-wrap:wrap}
-.brand{font-family:var(--display);font-size:18px;letter-spacing:.02em;text-decoration:none}
+.topbar .wrap{display:flex;align-items:center;gap:18px;padding-block:14px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:23px;letter-spacing:.02em;text-decoration:none}
 .brand b{color:var(--a)}
-.crumbs{color:var(--mute);font-size:13px;display:flex;gap:8px;flex-wrap:wrap}
+.crumbs{color:var(--mute);font-size:16px;display:flex;gap:8px;flex-wrap:wrap}
 .crumbs a{text-decoration:none;color:var(--fg)}
 .crumbs a:hover{color:var(--c)}
-.teamjump{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
-.teamjump a{font-family:var(--mono);font-size:11px;padding:3px 7px;border:1px solid var(--line);border-radius:3px;text-decoration:none;color:var(--mute)}
+.teamjump{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.teamjump a{font-family:var(--mono);font-size:13.5px;padding:5px 10px;border:1px solid var(--line);border-radius:3px;text-decoration:none;color:var(--mute)}
 .teamjump a:hover,.teamjump a[aria-current="true"]{color:var(--a-ink);background:var(--a);border-color:var(--a)}
 
 /* cover */
@@ -45,11 +44,14 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .cover::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(115deg,transparent 0 22px,color-mix(in srgb,var(--fg) 3%,transparent) 22px 23px)}
 .cover .wrap{position:relative;z-index:1;padding-block:44px 40px}
-.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--c)}
-.wordmark{font-family:var(--display);font-weight:400;line-height:.86;margin:10px 0 6px;font-size:clamp(84px,17vw,210px);letter-spacing:-.01em;color:var(--fg);text-shadow:0 0 60px color-mix(in srgb,var(--a) 45%,transparent)}
+.eyebrow{font-family:var(--body);font-size:14px;letter-spacing:.04em;color:var(--c)}
+.wordmark{font-family:var(--display);font-weight:400;line-height:.86;margin:10px 0 6px;font-size:clamp(84px,17vw,210px);letter-spacing:-.01em;color:var(--a);text-shadow:0 0 60px color-mix(in srgb,var(--a) 45%,transparent)}
 .wordmark .dot{color:var(--a)}
-.teamline{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;font-size:15px;color:var(--mute)}
-.teamline strong{color:var(--fg);font-size:18px}
+.teamline{display:flex;align-items:center;gap:18px;font-size:15px;color:var(--mute)}
+.teamline strong{color:var(--fg);font-size:22px;font-weight:400}
+.teamline .tl-div{align-self:stretch;width:1px;background:var(--mute);opacity:.6}
+.teamline .tl-rows{display:grid;gap:2px;line-height:1.45}
+.teamline .tl-rows span:first-child{color:var(--fg)}
 .rankpill{font-family:var(--mono);font-size:13px;background:var(--a);color:var(--a-ink);padding:2px 9px;border-radius:2px}
 
 .roster{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:30px}
@@ -71,13 +73,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 
 .brief{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-top:26px}
 .box{background:color-mix(in srgb,var(--panel) 92%,transparent);border:1px solid var(--line);border-radius:6px;padding:16px 18px;min-width:0}
-.box h3{margin:0 0 10px;font-size:12px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c);font-weight:600}
-.box ul{margin:0;padding-left:18px;display:grid;gap:7px}
-.box li{color:var(--fg)}
+.box h3{margin:0 0 12px;font-size:20px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--c);font-weight:400}
+.box ul{margin:0;padding-left:20px;display:grid;gap:9px}
+.box li{color:color-mix(in srgb,var(--fg) 82%,var(--bg));font-size:15.5px;line-height:1.65;letter-spacing:.01em}  /* ttf 가 굵게 보여서 조금 작고 옅게 */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
 .kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
-.kpi .k{font-size:11px;color:var(--mute)}
-.kpi .v{font-family:var(--mono);font-size:20px;font-weight:600}
+.kpi .k{font-size:13.5px;color:var(--mute)}
+.kpi .v{font-family:var(--mono);font-size:25px;font-weight:600}
 
 /* standings */
 .standings{padding-block:44px 60px}
@@ -167,12 +169,49 @@ tr:last-child td{border-bottom:0}
 .ps .met .up{color:var(--good)}
 .ps .met .dn{color:var(--bad)}
 .ps .met .d{font-size:12.5px;color:var(--mute);line-height:1.3;margin-top:1px}
+/* metric bar rows: track = position min–max, tick = position average, dot = player */
+.ps .mrows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 26px}
+.ps .mrow{display:grid;grid-template-columns:92px minmax(0,1fr) 62px 44px;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.ps .mrow .n{font-weight:600;font-size:14px;white-space:nowrap;cursor:help}
+.ps .mrow .n::after{content:" ⓘ";color:var(--dim);font-size:11px;font-weight:400}
+.ps .mtrack{position:relative;height:8px;background:var(--panel-2);border-radius:4px}
+.ps .mtrack .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;opacity:.55}
+.ps .mtrack .avg{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--c);opacity:.8}
+.ps .mtrack .dot{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid var(--panel)}
+.ps .mrow .v{font-family:var(--mono);font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
+.ps .mrow .rk{font-family:var(--mono);font-size:12px;color:var(--dim);text-align:right}
+.ps .up{color:var(--good)} .ps .dn{color:var(--bad)}
+/* collapsible sentence */
+details.more{display:inline}
+details.more summary{cursor:pointer;list-style:none;display:inline}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary .dots{color:var(--c);font-size:12px;margin-left:4px;white-space:nowrap}
+details.more[open] summary{display:none}
+details.more .less{background:none;border:0;padding:0;margin-left:6px;font:inherit;font-size:12px;color:var(--c);cursor:pointer;white-space:nowrap}
+details.more .less:hover{text-decoration:underline}
+.ps .conf{font-size:10px;letter-spacing:1px;margin-left:6px;white-space:nowrap;cursor:help}
+.ps .conf.strong{color:var(--good)} .ps .conf.mid{color:var(--ok)} .ps .conf.weak{color:var(--dim)}
+/* 말풍선: 마우스를 올리거나 누르면 바로 뜸 (title 툴팁은 늦게 뜨고 터치·미리보기 창에서 안 뜸) */
+.tip,.tip2{position:relative;cursor:help;outline:none}
+.tip{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;border:1px solid var(--c);color:var(--c);
+  font-size:11px;font-family:var(--body);font-weight:700;margin-left:6px;vertical-align:2px;line-height:1}
+.tip:hover,.tip:focus{background:var(--c);color:var(--bg)}
+.tip.on{background:var(--c);color:var(--bg)}
+/* 말풍선 상자 1개를 body 에 두고 JS 로 위치를 잡음 (상자 안에 갇히거나 다른 규칙에 가려지지 않게) */
+#pop{position:fixed;z-index:1000;display:none;max-width:300px;background:var(--panel-2);color:var(--fg);border:1px solid var(--c);border-radius:4px;
+  padding:8px 10px;font:400 13px/1.5 var(--body);box-shadow:0 8px 22px #000a;pointer-events:none}
+.ps .wrcell{display:flex;align-items:center;gap:4px;justify-content:flex-end}
+.ps .wrcell .bar{width:28px;height:6px;background:var(--panel-2);border-radius:3px;overflow:hidden}
+.ps .wrcell .bar i{display:block;height:100%}
+.ps .champ tr.few td{opacity:.45}
+.ps .rchip{display:inline-block;font-size:12.5px;border:1px solid var(--line);border-radius:3px;padding:0 5px;margin:0 4px 3px 0;color:var(--mute)}
+.ps .rchip b{font-family:var(--mono);font-weight:600;color:var(--fg)}
 .ps .key{font-size:12px;color:var(--dim);margin-top:6px}
 .ps .key i{display:inline-block;width:16px;vertical-align:middle;margin:0 4px 0 8px}
 .ps .key i:first-child{margin-left:0}
 .ps .champ td,.ps .champ th{padding:5px 6px}
 .ps .champ td{font-size:14.5px}
-.ps .champ td:first-child{font-weight:500}
+.ps .champ td:first-child{font-weight:500;white-space:nowrap}
 .ps .chip{font-family:var(--mono);font-size:11.5px;padding:0 6px;border-radius:9px;border:1px solid var(--line);color:var(--mute);white-space:nowrap;flex:none}
 .ps .chip.strong{color:var(--good);border-color:color-mix(in srgb,var(--good) 50%,transparent)}
 .ps .chip.mid{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
@@ -182,22 +221,37 @@ tr:last-child td{border-bottom:0}
 .ps .rep .pro h4{background:color-mix(in srgb,var(--good) 30%,#0f2a19);color:#d6f7e2}
 .ps .rep .con h4{background:color-mix(in srgb,var(--bad) 32%,#2a0f0f);color:#ffdcd6}
 .ps .rep ul{list-style:none;margin:0;padding:0;display:grid;gap:11px}
-.ps .rep li{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:15px;line-height:1.45}
-.ps .ico{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700;color:#08130c;margin-top:1px}
-.ps .pro .ico{background:var(--good)}
-.ps .con .ico{background:var(--bad);color:#2a0606}
+.ps .rep li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:start;font-size:15px;line-height:1.45}
+.ps .rep li .conf{margin:3px 0 0}
+.ps .a-report{display:flex;flex-direction:column;overflow:hidden}
+.ps .rep-scroll{flex:1;min-height:0;overflow-y:auto;padding-right:8px;scrollbar-width:thin;scrollbar-color:var(--dim) transparent}
+.ps .rep-scroll::-webkit-scrollbar{width:6px}
+.ps .rep-scroll::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px}
+.ps .rep .pro h4,.ps .rep .con h4{position:sticky;top:0;z-index:1}
+.ps .conf-key{margin-top:14px;padding-top:9px;border-top:1px solid var(--line);font-size:12px;color:var(--dim);line-height:1.6}
+.ps .conf-key .conf{margin:0 2px 0 4px;cursor:default}
+/* 특징 아이콘: 모양·색 = 특징 분류 (라인전·교전·운영…), 장점/단점은 칸 머리 색으로 구분 */
+.ps .ico{width:18px;height:18px;border-radius:4px;display:grid;place-items:center;color:var(--ic);
+  background:color-mix(in srgb,var(--ic) 16%,transparent);border:1px solid color-mix(in srgb,var(--ic) 45%,transparent);margin-top:2px}
+.ps .pro .ico{--ic:var(--good)!important} .ps .con .ico{--ic:var(--bad)!important}  /* 색 = 장점 초록·단점 빨강, 모양 = 특징 분류 */
+.ps .ico svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ps .ico svg .f{fill:currentColor;stroke:none}
 .ps .rec{font-family:var(--mono);font-size:11.5px;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 40%,transparent);border-radius:3px;padding:0 3px;margin-right:4px}
 .ps .bullets{margin:0;padding-left:18px;display:grid;gap:8px;font-size:14.5px}
+.disclaim{color:var(--dim);font-size:12.5px;line-height:1.5;text-align:center;padding-top:28px;padding-bottom:36px}  /* 팀 페이지 아래 안내 */
 .ps .disclaim{max-width:1400px;margin:0 auto;padding:0 16px 20px;color:var(--dim);font-size:12.5px}
 @media (max-width:1180px){
   .ps .grid{grid-template-columns:260px minmax(0,1fr);
     grid-template-areas:"left radar" "left metrics" "left report" "sum sum" "champ banpick"}
   .ps .sum ul{grid-template-columns:minmax(0,1fr)}
+  .ps .champ td,.ps .champ th{padding:5px 4px;font-size:13.5px}
+  .ps .wrcell .bar{display:none}   /* 좁은 칸에서는 챔피언 이름이 한 줄로 들어가게 막대 생략 */
 }
 @media (max-width:760px){
   .ps .grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"left" "radar" "metrics" "report" "sum" "champ" "banpick"}
   .ps .rep{grid-template-columns:minmax(0,1fr)}
-  .ps .mets{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ps .mrows{grid-template-columns:minmax(0,1fr)}
+  .ps .mrow{grid-template-columns:84px minmax(0,1fr) 58px 40px}
   .ps .radar{max-width:340px;margin:0 auto}
 }
 
@@ -215,7 +269,7 @@ tr:last-child td{border-bottom:0}
 </style>
 
 <header class="topbar"><div class="wrap">
-  <a class="brand" href="#team-T1"><b>T1</b> 스카우팅 룸</a>
+  <a class="brand" href="index.html" title="표지로"><b>2026</b> LCK 전력 리포트</a>
   <nav class="crumbs" id="crumbs"></nav>
   <nav class="teamjump" id="teamjump" aria-label="팀 바로가기"></nav>
 </div></header>
@@ -247,9 +301,9 @@ const pct = (x,d=0) => x==null||isNaN(x) ? "-" : (x*100).toFixed(d)+"%";
 const sgn = x => x==null||isNaN(x) ? "-" : (x>0?"+":"")+Math.round(x);
 const parsePct = s => typeof s==="string" ? parseFloat(s)/100 : s;
 
-function applyTheme(name){
+function applyTheme(name, unify=true){  // unify: 보조색도 팀 메인 색으로 (팀 페이지). 선수 페이지는 원래 보조색
   const t = THEMES[name] || THEMES.T1, r = document.documentElement.style;
-  r.setProperty('--a',t.a); r.setProperty('--a-ink',t.ink); r.setProperty('--b',t.b); r.setProperty('--c',t.c);
+  r.setProperty('--a',t.a); r.setProperty('--a-ink',t.ink); r.setProperty('--b',t.b); r.setProperty('--c', unify ? t.a : t.c);
 }
 
 /* Placeholder portrait: drawn silhouette in team colours until real photos are added */
@@ -268,10 +322,10 @@ function portraitSVG(p, cls="ph"){
       <linearGradient id="${uid}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".15"/><stop offset="1" stop-color="#000" stop-opacity=".75"/></linearGradient>
     </defs>
     <rect width="160" height="200" fill="url(#${uid})"/>
-    <text x="80" y="92" text-anchor="middle" font-family="Black Han Sans, sans-serif" font-size="96" fill="#fff" fill-opacity=".10">${init}</text>
+    <text x="80" y="92" text-anchor="middle" font-family="NoonnuBasicGothic, sans-serif" font-size="96" fill="#fff" fill-opacity=".10">${init}</text>
     <circle cx="80" cy="82" r="30" fill="url(#${uid}s)"/>
     <path d="M18 200 C22 150 48 124 80 124 C112 124 138 150 142 200 Z" fill="url(#${uid}s)"/>
-    <text x="10" y="190" font-family="IBM Plex Mono, monospace" font-size="11" fill="#fff" fill-opacity=".8">${esc(POS_EN[p.position]||"")}</text>
+    <text x="10" y="190" font-family="NoonnuBasicGothic, monospace" font-size="11" fill="#fff" fill-opacity=".8">${esc(POS_EN[p.position]||"")}</text>
   </svg>`;
 }
 
@@ -279,6 +333,47 @@ function chip(conf){
   const c = (conf||"").trim(); if(!c) return "";
   const k = c.startsWith("강함")?"strong":c.startsWith("보통")?"mid":c.startsWith("약함")?"weak":"";
   return `<span class="chip ${k}">${esc(c.split(" ")[0])}</span>`;
+}
+
+// 보고서 특징 분류: 괄호 밖 문장에서 위에서부터 처음 맞는 분류 (순서가 중요)
+const TRAITS = [
+  ["lane","라인전","#f5a524",/라인전|솔킬|솔로킬|맞대결|초반 우위|라인 우위|대결|1대1|기본기/,'<path d="M2.5 2.5l8 8M10.5 13.5l3-3M12 12l1.5 1.5M13.5 2.5l-8 8M5.5 13.5l-3-3M4 12l-2 2"/>'],
+  ["big","큰 경기·강팀","#ff9f80",/강팀|월즈|국제|우승|결승|존재감|페이커전|판독기/,'<path d="M4.5 2h7v3.5a3.5 3.5 0 0 1-7 0zM4.5 3H2v1.2C2 5.6 3 6.6 4.6 6.7M11.5 3H14v1.2c0 1.4-1 2.4-2.6 2.5M8 9v3M5 14h6"/>'],
+  ["gank","동선·합류","#3ec7ff",/갱|합류|로밍|동선|호응|카운터 정글|개입|템포 연계|사파/,'<path d="M3 13c3.5 0 3-9.5 7-9.5h3.5M11.5 1.5l2 2-2 2"/><circle class="f" cx="3" cy="13" r="1.6"/>'],
+  ["vision","시야","#a88bff",/시야|와드/,'<path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/>'],
+  ["survive","생존·무리","#ff8fb1",/데스|무리|진입|쉽게 죽|생존|안정성|짤/,'<path d="M8 1.8c-3.3 0-5.5 2.3-5.5 5.2 0 1.8.9 3 2 3.7V13.5h7v-2.8c1.1-.7 2-1.9 2-3.7 0-2.9-2.2-5.2-5.5-5.2z"/><circle class="f" cx="5.9" cy="7.3" r="1.2"/><circle class="f" cx="10.1" cy="7.3" r="1.2"/>'],
+  ["carry","캐리·딜","#ffd84d",/캐리|딜|에이스|메이킹|골드|파밍/,'<path d="M8 14.5c-2.8 0-4.5-1.9-4.5-4.4 0-2.6 2-3.9 2.6-6.6 1.3 1 1.9 2.2 1.9 3.4.9-.6 1.5-1.6 1.6-2.8 1.9 1.6 2.9 3.6 2.9 6 0 2.5-1.7 4.4-4.5 4.4z"/>'],
+  ["fight","교전·한타","#ff6b5b",/교전|한타|이니시|싸움|킬|공격적|공격성|과감|결정적|고점|무빙|피지컬|포지셔닝|스틸|계산|클러치|세이브|압박|궁극기/,'<path d="M8 1.5l1.6 3.6 3.9-.8-2 3.4 2.9 2.6-3.9.5-.4 3.9L8 12l-2.1 2.7-.4-3.9-3.9-.5 2.9-2.6-2-3.4 3.9.8z"/>'],
+  ["champ","챔피언·메타","#4fd1a5",/챔피언|픽|폭|메타|밴|숙련/,'<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>'],
+  ["macro","운영·판단","#6ea8ff",/운영|콜|오더|판단|설계|오브젝트|리드|사이드|연구|준비|이해도|중반|해결사|시간을 벌|타이밍/,'<circle cx="8" cy="8" r="6.3"/><path d="M10.6 5.4l-1.6 3.6-3.6 1.6 1.6-3.6z"/>'],
+  ["mental","멘탈·기복","#e58cff",/멘탈|기복|자신감|태도|변동|저점|꾸준|실수|안정적|감정|집중력|마인드|성숙|노력|성실|인정|소극/,'<path d="M1 8.5h3l1.6-4 2.8 8 1.8-4H15"/>'],
+  ["role","팀 역할","#9fd36b",/역할|부담|중심|리더|멘토|후배|맏형|베테랑|경험|위상|레전드|호흡|듀오|의존|영향력|엔진|분위기|신뢰|팀플레이|팀 기여|비중|퍼즐|피드백|소통|1옵션|팀 성적|서포팅/,'<path d="M8 1.5l5.5 2v4.2c0 3.5-2.4 5.7-5.5 6.8-3.1-1.1-5.5-3.3-5.5-6.8V3.5z"/>'],
+  ["form","폼·나이","#c9a98a",/나이|하락|에이징|폼|부진|적응|서사|기량/,'<path d="M4 1.5h8M4 14.5h8M5 1.5c0 3.5 3 4.5 3 6.5s-3 3-3 6.5M11 1.5c0 3.5-3 4.5-3 6.5s3 3 3 6.5"/>'],
+  ["rep","평판·기용","#b8b8c4",/./,'<path d="M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z"/>'],
+];
+const REC_ICO = ["rec","경기 기록","#f2d49b",null,'<path d="M2 14h12M4 11.5V8M7 11.5V4M10 11.5V6.5M13 11.5V2.5"/>'];
+const traitOf = t => { const b = String(t||"").replace(/\([^()]*\)/g,""); return TRAITS.find(x=>x[3].test(b)); };
+const traitIco = tr => `<span class="ico" style="--ic:${tr[2]}" tabindex="0" data-tip="${esc(tr[1])}"><svg viewBox="0 0 16 16" aria-hidden="true">${tr[4]}</svg></span>`;
+
+// 신뢰도: 글자 배지 대신 점 3개 (강함 ●●● · 보통 ●●○ · 약함 ●○○), 원래 글자는 마우스를 올리면 보임
+function dots(conf){
+  const c = (conf||"").trim(); if(!c) return "";
+  const [k,n] = c.startsWith("강함")?["strong",3]:c.startsWith("보통")?["mid",2]:c.startsWith("약함")?["weak",1]:["",0];
+  if(!n) return chip(conf);
+  return `<span class="conf ${k}" title="신뢰도 ${esc(c)}">${"●".repeat(n)}${"○".repeat(3-n)}</span>`;
+}
+// 긴 문장 접기: 앞부분(첫 문장 또는 첫 쉼표·대시 앞)만 보이고, 누르면 전체
+function fold(t, max=46){
+  t = String(t||"").trim();
+  if(t.length <= max) return esc(t);
+  const base = t.replace(/\s*\([^()]*\)/g,"").replace(/\s{2,}/g," ").trim();   // 괄호 속 숫자는 펼쳤을 때만
+  if(base.length <= max+10) return `<details class="more"><summary>${esc(base)}<span class="dots">수치 ▸</span></summary>${esc(t)}<button class="less" type="button" onclick="this.closest('details').open=false">접기 ▴</button></details>`;
+  let cut = -1;
+  const m = base.match(/^(.{12,}?[.!?])\s/);           // 첫 문장
+  if(m && m[1].length <= max+20) cut = m[1].length;
+  if(cut<0){ for(const sep of [" — ", " - ", ", ", "(", " · "]){ const i=base.indexOf(sep,12); if(i>0 && i<=max){ cut=i; break; } } }
+  if(cut<0){ const i=base.lastIndexOf(" ",max); cut = i>12?i:max; }
+  return `<details class="more"><summary>${esc(base.slice(0,cut).replace(/[,(·—-]\s*$/,""))}<span class="dots">더 보기 ▸</span></summary>${esc(t)}<button class="less" type="button" onclick="this.closest('details').open=false">접기 ▴</button></details>`;
 }
 
 function teamPlayers(team){
@@ -301,23 +396,6 @@ function nav(team, player){
   ) : "";
 }
 
-function standingsHTML(cur){
-  const rows = D.standings.map((s,i)=>{
-    const n=s.team_cfg||s.team, t=D.teams[n], th=THEMES[n]||{};
-    const wr = s.w/(s.w+s.l);
-    return `<tr class="st-row ${cur===n?'cur':''} ${i===5?'cut':''}" data-href="#team-${t?t.id:''}">
-      <td class="num">${s.rank}</td>
-      <td><a class="st-team" href="#team-${t?t.id:''}"><span class="swatch" style="background:${th.a}"></span>${esc(n)} <span style="color:var(--mute);font-size:12px">${esc(t?.name_ko||"")}</span></a></td>
-      <td class="num">${s.w}</td><td class="num">${s.l}</td>
-      <td class="num">${s.sw}–${s.sl}</td><td class="num">${s.diff>0?"+":""}${s.diff}</td>
-      <td><div class="wbar" aria-hidden="true"><i style="width:${(wr*100).toFixed(1)}%;background:${th.a}"></i></div></td>
-      <td class="num">${pct(wr,1)}</td></tr>`;
-  }).join("");
-  return `<section class="standings"><div class="wrap">
-    <div class="sec-h"><h2 id="standings">LCK 정규시즌 순위</h2><p>Rounds 1–4 · 매치 기준 · 2026-08-25까지 (리서치 기간). 점선 위 6팀 = 플레이오프권. 팀을 누르면 그 팀 표지로 갑니다.</p></div>
-    <div class="tbl-wrap"><table><thead><tr><th>#</th><th>팀</th><th>승</th><th>패</th><th>세트</th><th>득실</th><th>매치 승률</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
-  </div></section>`;
-}
 
 function renderTeam(team){
   applyTheme(team.name); nav(team);
@@ -337,22 +415,21 @@ function renderTeam(team){
   const isT1 = team.name==="T1";
   const second = isT1
     ? `<div class="box"><h3>운영 지표</h3>${kpis(team)}</div>`
-    : `<div class="box"><h3>T1 상대 밴픽 시사점 (추론)</h3><ul>${team.vsT1.slice(0,5).map(b=>`<li>${esc(b)}</li>`).join("")}</ul></div>`;
+    : `<div class="box"><h3>T1 상대 밴픽 시사점 (추론)</h3><ul>${team.vsT1.slice(0,5).map(b=>`<li>${fold(b,70)}</li>`).join("")}</ul></div>`;
   document.getElementById('app').innerHTML = `
   <section class="cover"><div class="wrap">
     <div class="eyebrow">2026 LCK · 조사 프로필 · 로스터 08-25 기준</div>
-    <h1 class="wordmark">${esc(th.short)}<span class="dot">.</span></h1>
-    <div class="teamline"><strong>${esc(team.name)}</strong><span>${esc(team.name_ko)}</span>
-      ${s?`<span class="rankpill">정규시즌 ${s.rank}위</span><span class="num">${s.w}승 ${s.l}패 · 세트 ${s.diff>0?"+":""}${s.diff}</span>`:""}
-      <span class="num">전체 ${team.games}경기 · 승률 ${pct(team.overall.winrate)}</span></div>
+    <h1 class="wordmark">${esc(th.short)}</h1>
+    <div class="teamline"><strong>${esc(team.name)}</strong><span class="tl-div" aria-hidden="true"></span>
+      <div class="tl-rows">${s?`<span>정규시즌 ${s.rank}위</span><span class="num">${s.w}승 ${s.l}패 · 세트 ${s.diff>0?"+":""}${s.diff}</span>`:""}
+      <span class="num">전체 ${team.games}경기 · 승률 ${pct(team.overall.winrate)}</span></div></div>
     <div class="roster">${cards}</div>${subsHTML}
     <div class="brief">
-      <div class="box"><h3>팀 요약</h3><ul>${team.summary.map(b=>`<li>${esc(b)}</li>`).join("")}</ul></div>
+      <div class="box"><h3>팀 요약</h3><ul>${team.summary.map(b=>`<li>${fold(b,70)}</li>`).join("")}</ul></div>
       ${second}
     </div>
     ${isT1?"":`<div class="box" style="margin-top:16px"><h3>운영 지표</h3>${kpis(team)}</div>`}
   </div></section>
-  ${standingsHTML(team.name)}
   <div class="wrap disclaim">프로필 문장은 기사·인터뷰·커뮤니티 출처들이 이 팀·선수를 어떻게 보는지 요약한 것이며 실제 기량과 다를 수 있습니다. 경기 기록은 Oracle's Elixir, 리서치 기간(2026-08-25까지) 경기만.</div>`;
   bindRows();
 }
@@ -374,10 +451,15 @@ function kpis(team){
 
 /* ---------- player sheet (FM style) ---------- */
 const COUNTRY = {"South Korea":"대한민국","China":"중국","Vietnam":"베트남","Taiwan":"대만","Japan":"일본","United States":"미국"};
-const AXES_ALL = [["DPM","dpm"],["딜 비중","damageshare"],["골드 비중","earnedgoldshare"],["KDA","kda"],["데스","deaths"],
-                  ["시야","vspm"],["XPD@15","xpdiffat15"],["CSD@15","csdiffat15"],["GD@15","golddiffat15"]];
+// 축 = build.py POS_METRICS (공통 KDA·데스·킬 관여 + 포지션별). 순서는 p.attrs 순서 그대로.
+const AX_LABEL = {kda:"KDA",deaths:"데스",kp:"킬 관여",dpm:"DPM",damageshare:"딜 비중",earnedgoldshare:"골드 비중",
+  dmg_eff:"딜 효율",cspm:"분당 CS",apg:"어시스트",vspm:"시야",kaat15:"15분 킬관여",
+  golddiffat10:"GD@10",csdiffat10:"CSD@10",xpdiffat10:"XPD@10",golddiffat15:"GD@15",csdiffat15:"CSD@15",xpdiffat15:"XPD@15"};
 const DESC = {dpm:"분당 상대 챔피언에게 준 피해량", damageshare:"팀 전체 챔피언 피해 중 이 선수 몫", earnedgoldshare:"팀이 번 골드 중 이 선수 몫",
   kda:"(킬 + 어시스트) ÷ 데스", deaths:"경기당 평균 데스. 적을수록 좋음", vspm:"분당 시야 점수 (와드 설치·제거)",
+  kp:"팀 킬 중 킬·어시스트로 관여한 비율", dmg_eff:"딜 비중 ÷ 골드 비중. 1보다 크면 받은 골드보다 딜을 많이 넣음",
+  cspm:"분당 미니언·몬스터 처치 수", apg:"경기당 평균 어시스트", kaat15:"15분까지 킬 + 어시스트 (경기당). 초반 개입",
+  golddiffat10:"10분 맞라이너 대비 골드 차", csdiffat10:"10분 맞라이너 대비 CS 차", xpdiffat10:"10분 맞라이너 대비 경험치 차",
   xpdiffat15:"15분 맞라이너 대비 경험치 차", csdiffat15:"15분 맞라이너 대비 CS 차", golddiffat15:"15분 맞라이너 대비 골드 차"};
 // 보고서 규칙: 플레이스타일 문장 중 부정어·엇갈림 없는 것 = 장점, 약점 = 프로필 4장. 기록 장점/약점 = 능력치 점수 14 이상 / 6 이하.
 const NEG = /기복|무리|약점|저하|변동|쏠/, MIX = /엇갈|논쟁/;
@@ -386,19 +468,20 @@ function fmtRaw(k,v){
   if(["kp","damageshare","earnedgoldshare"].includes(k)) return pct(v,1);
   if(k.startsWith("golddiff")||k.startsWith("xpdiff")) return sgn(v);
   if(k.startsWith("csdiff")) return (v>0?"+":"")+(+v).toFixed(1);
+  if(k==="cspm"||k==="apg"||k==="kaat15") return (+v).toFixed(1);
   return (+v).toFixed(k==="dpm"?0:2);
 }
 const wrc = w => w>=.6?'wr-hi':w<.45?'wr-lo':'';
 const better = (k,v,m)=> k==="deaths" ? v<m : v>m;
 
 function renderPlayer(p){
-  const team = D.teams[p.team]; applyTheme(p.team); nav(team,p);
+  const team = D.teams[p.team]; applyTheme(p.team, false); nav(team,p);
   const th = THEMES[p.team] || THEMES.T1;
   const A = Object.fromEntries(p.attrs.map(a=>[a.key,a]));
   const peers = Object.values(D.players).filter(q=>q.position===p.position);
   const ranges = {};
-  for(const [,k] of AXES_ALL){ const v=peers.flatMap(q=>q.attrs.filter(x=>x.key===k).map(x=>x.value)); if(v.length) ranges[k]=[Math.min(...v),Math.max(...v)]; }
-  const AXES = AXES_ALL.filter(([,k])=>A[k]&&ranges[k]);
+  for(const {key:k} of p.attrs){ const v=peers.flatMap(q=>q.attrs.filter(x=>x.key===k).map(x=>x.value)); if(v.length) ranges[k]=[Math.min(...v),Math.max(...v)]; }
+  const AXES = p.attrs.map(a=>[AX_LABEL[a.key]||a.label,a.key]).filter(([,k])=>ranges[k]);
   const age = p.birth ? Math.floor((new Date("2026-08-25")-new Date(p.birth))/3.15576e10) : null;
 
   /* left: photo, vitals, career */
@@ -422,21 +505,23 @@ function renderPlayer(p){
         <div><span class="k">KDA</span><span class="v">${p.overall.kda}</span></div>
       </div>
     </div>
-    <div class="pbox"><h3>커리어</h3>
+    <div class="pbox"><h3>커리어<span class="tip" tabindex="0" data-tip="Leaguepedia 공식 대회 전체(정규·플레이오프·국제전·KeSPA컵·CL), 2026-08-25까지. 국가대표·올스타 제외. 사진 아래 경기·승률·KDA = 2026 LCK 리서치 기간.">i</span></h3>
       ${career.length?`<table class="career"><thead><tr><th>팀 · 기간</th><th class="r">경기</th><th class="r">승률</th></tr></thead><tbody>${careerRows}</tbody></table>`:`<div class="foot">기록 없음</div>`}
-      <div class="foot">Leaguepedia 공식 대회 전체(정규·플레이오프·국제전·KeSPA컵·CL), 2026-08-25까지. 국가대표·올스타 제외. 사진 아래 경기·승률·KDA = 2026 LCK 리서치 기간.</div>
     </div>
   </div>`;
 
-  /* radar: player vs position average, each axis scaled to the position's min–max */
-  const norm = (k,v)=>{const [lo,hi]=ranges[k];let t=hi>lo?(v-lo)/(hi-lo):.5;if(k==="deaths")t=1-t;return Math.max(0,Math.min(1,t));};
+  /* radar: 포지션 평균 = 가운데 원(0.5), 표준편차 1 = 원 반지름의 1/5. 최하위여도 중심(0)에 붙지 않게 아래는 0.08에서 멈춤.
+     (예전: 축마다 최저~최고로 늘려서 꼴찌는 무조건 중심 0 → 다각형이 찌그러짐) */
+  const ZS = 5;
+  const zpos = k => Math.max(.08, Math.min(1, .5 + (A[k].z ?? 0)/ZS));
+  const norm = (k,v)=> v===A[k].pos_mean ? .5 : zpos(k);
   const rng = k=>{const [lo,hi]=ranges[k];return k==="deaths"?`${fmtRaw(k,hi)}–${fmtRaw(k,lo)}`:`${fmtRaw(k,lo)}–${fmtRaw(k,hi)}`;};
   const radar = ()=>{
     const W=372,H=290,cx=W/2,cy=H/2+2,R=98,n=AXES.length;
     const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/n;return [cx+r*Math.cos(a),cy+r*Math.sin(a)];};
     const poly=f=>AXES.map(([,k],i)=>pt(i,R*f(k)).map(v=>v.toFixed(1)).join(",")).join(" ");
     let g=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--panel-2)" stroke="var(--dim)" stroke-width="1"/>`;
-    g+=[.25,.5,.75].map(f=>`<circle cx="${cx}" cy="${cy}" r="${R*f}" fill="none" stroke="var(--line)"/>`).join("");
+    g+=[.25,.75].map(f=>`<circle cx="${cx}" cy="${cy}" r="${R*f}" fill="none" stroke="var(--line)"/>`).join("");
     g+=AXES.map((_,i)=>{const [x,y]=pt(i,R);return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)"/>`;}).join("");
     g+=`<polygon points="${poly(k=>norm(k,A[k].pos_mean))}" fill="none" stroke="var(--c)" stroke-width="1.5" stroke-dasharray="2 3" stroke-linecap="round"/>`;
     g+=`<polygon points="${poly(k=>norm(k,A[k].value))}" fill="var(--a)" fill-opacity=".28" stroke="var(--a)" stroke-width="2" stroke-linejoin="round"/>`;
@@ -444,36 +529,44 @@ function renderPlayer(p){
     g+=AXES.map(([lab,k],i)=>{const [x,y]=pt(i,R+16);const anc=Math.abs(x-cx)<6?"middle":x>cx?"start":"end";const dy=y<cy-R*0.6?-6:y>cy+R*0.6?8:0;
       return `<g><title>${esc(A[k].label)} ${fmtRaw(k,A[k].value)} · 포지션 평균 ${fmtRaw(k,A[k].pos_mean)} · ${A[k].rank}/${A[k].of}위</title>
         <text x="${x.toFixed(1)}" y="${(y+dy-1).toFixed(1)}" text-anchor="${anc}">${lab}</text>
-        <text class="rg" x="${x.toFixed(1)}" y="${(y+dy+10).toFixed(1)}" text-anchor="${anc}">(${rng(k)})</text></g>`;}).join("");
+        <text class="rg" x="${x.toFixed(1)}" y="${(y+dy+10).toFixed(1)}" text-anchor="${anc}">${fmtRaw(k,A[k].value)} · ${A[k].rank}/${A[k].of}</text></g>`;}).join("");
     return `<svg class="radar" viewBox="0 0 ${W} ${H}" role="img" aria-label="능력치: 선수 대 포지션 평균">${g}</svg>`;
   };
   const radarBox = `<div class="pbox a-radar"><h3>지표<small>포지션 평균 대비</small></h3>
     <div class="rad">${radar()}</div>
-    <div class="key"><i style="border-top:2px solid var(--a)"></i>${esc(p.id)}<i style="border-top:2px dotted var(--c)"></i>LCK ${esc(p.position)} 평균 (리서치 대상 ${peers.length}명) · 축 범위 = 그 ${peers.length}명의 최소–최대 · 바깥일수록 좋음 (데스는 적을수록 바깥)</div>
+    <div class="key"><i style="border-top:2px solid var(--a)"></i>${esc(p.id)}<i style="border-top:2px dotted var(--c)"></i>${esc(p.position)} 평균<span class="tip" tabindex="0" data-tip="점선 원 = LCK ${esc(p.position)} 평균(20경기 이상 ${A[AXES[0]?.[1]]?.of??""}명). 바깥일수록 좋음 (데스는 적을수록 바깥). 원 한 칸(가는 선) ≈ 평균에서 1.25 표준편차. 축 아래 숫자 = 선수 값 · 순위.">i</span></div>
   </div>`;
-  const metBox = `<div class="pbox a-metrics"><h3>지표 설명<small>순위 = LCK ${esc(p.position)} ${peers.length}명 중</small></h3><div class="mets">${AXES.map(([lab,k])=>{const a=A[k],d=better(k,a.value,a.pos_mean);
-    return `<div class="met"><div class="t"><span class="n">${lab}</span><span class="rk">${a.rank}/${a.of}위</span></div>
-      <div class="v"><span class="${d?'up':'dn'}">${fmtRaw(k,a.value)}</span><span class="av">평균 ${fmtRaw(k,a.pos_mean)}</span></div>
-      <div class="d">${DESC[k]||esc(a.label)}</div></div>`;}).join("")}</div></div>`;
+  // 한 줄 막대: 레이더와 같은 눈금 (가운데 세로선 = 평균, 오른쪽일수록 좋음, 데스는 뒤집음)
+  const mrow = ([lab,k])=>{const a=A[k],d=better(k,a.value,a.pos_mean);const x=(norm(k,a.value)*100).toFixed(1),avg=(norm(k,a.pos_mean)*100).toFixed(1);
+    const col=d?'var(--good)':'var(--bad)';
+    return `<div class="mrow"><span class="n tip2" tabindex="0" data-tip="${esc((DESC[k]||a.label)+' · 범위 '+rng(k)+' · 평균 '+fmtRaw(k,a.pos_mean))}">${lab}</span>
+      <span class="mtrack" aria-hidden="true"><i class="fill" style="width:${x}%;background:${col}"></i><i class="avg" style="left:${avg}%"></i><i class="dot" style="left:${x}%;background:${col}"></i></span>
+      <span class="v ${d?'up':'dn'}">${fmtRaw(k,a.value)}</span><span class="rk">${a.rank}/${a.of}</span></div>`;};
+  const metBox = `<div class="pbox a-metrics"><h3>지표<small>오른쪽일수록 좋음 · 세로선 = ${esc(p.position)} 평균 · 순위 = 20경기 이상 ${A[AXES[0]?.[1]]?.of??""}명 중</small></h3><div class="mrows">${AXES.map(mrow).join("")}</div></div>`;
 
   /* report */
   const recTxt = a => `${a.label} ${fmtRaw(a.key,a.value)} (${a.rank}/${a.of})`;
+  // 기록 장단점(능력치 점수 14 이상 / 6 이하)은 한 줄에 칩으로 모음
+  const recLine = xs => xs.length ? [{rec:1, html:xs.map(a=>`<span class="rchip" title="${esc(a.label)}">${AX_LABEL[a.key]||esc(a.label)} <b>${a.rank}/${a.of}</b></span>`).join("")}] : [];
   const pros = [...p.playstyle.filter(c=>!NEG.test(c.claim)&&!MIX.test(c.claim)).map(c=>({t:c.claim,conf:c.conf})),
-                ...p.attrs.filter(a=>a.score>=14).map(a=>({t:recTxt(a),rec:1}))];
+                ...recLine(p.attrs.filter(a=>a.score>=14))];
   const cons = [...p.weak.map(c=>({t:c.claim.replace(/\s*\(.*?\)\s*$/,""),conf:c.conf})),
-                ...p.attrs.filter(a=>a.score<=6).map(a=>({t:recTxt(a),rec:1}))];
-  const item = (x,ico)=>`<li><span class="ico">${ico}</span><span>${x.rec?'<span class="rec">기록</span>':''}${esc(x.t)} ${x.conf?chip(x.conf):''}</span></li>`;
-  const reportBox = `<div class="pbox a-report"><h3>보고서</h3>
+                ...recLine(p.attrs.filter(a=>a.score<=6))];
+  const item = x=>`<li>${traitIco(x.rec?REC_ICO:traitOf(x.t))}<span>${x.rec?x.html:fold(x.t,40)}</span>${x.conf?dots(x.conf):'<span></span>'}</li>`;
+  const reportBox = `<div class="pbox a-report"><h3>보고서</h3><div class="rep-scroll">
     <div class="rep"><div class="pro"><h4>장점</h4><ul>${pros.map(x=>item(x,"✓")).join("")}</ul></div>
     <div class="con"><h4>단점</h4><ul>${cons.map(x=>item(x,"!")).join("")}</ul></div></div>
+    <div class="conf-key">점 = 신뢰도 · <span class="conf strong">●●●</span> 강함 (서로 다른 출처 2개 이상 + 경기 기록과 맞음) · <span class="conf mid">●●○</span> 보통 · <span class="conf weak">●○○</span> 약함 (근거가 적거나 출처끼리 엇갈림)</div></div>
   </div>`;
 
   /* champions, ban-pick, summary */
-  const champRows = (p.champions||[]).slice(0,8).map(c=>`<tr><td>${esc(c.champion)}</td><td class="r num">${c.games}</td>
-    <td class="r num ${wrc(c.winrate)}">${pct(c.winrate)}</td><td class="r num">${(+c.kda).toFixed(2)}</td><td class="r num">${sgn(c.golddiffat15)}</td></tr>`).join("");
-  const champBox = `<div class="pbox a-champ"><h3>챔피언 폭</h3><table class="champ"><thead><tr><th>챔피언</th><th class="r">G</th><th class="r">승률</th><th class="r">KDA</th><th class="r">GD15</th></tr></thead><tbody>${champRows}</tbody></table></div>`;
-  const banBox = `<div class="pbox a-banpick"><h3>밴픽 시사점<small>추론</small></h3><ul class="bullets">${p.banpick.map(b=>`<li>${esc(b)}</li>`).join("")}</ul></div>`;
-  const sumBox = `<div class="pbox a-sum sum"><h3>스카우트 요약</h3><ul>${p.summary.map(b=>`<li>${esc(b)}</li>`).join("")}</ul></div>`;
+  const wrCol = w => w>=.6?'var(--good)':w<.45?'var(--bad)':'var(--ok)';
+  const champRows = (p.champions||[]).slice(0,8).map(c=>`<tr class="${c.games<3?'few':''}"><td title="${esc(c.champion)}">${esc(c.champion_ko||c.champion)}</td><td class="r num">${c.games}</td>
+    <td class="r num ${wrc(c.winrate)}"><span class="wrcell"><span class="bar" aria-hidden="true"><i style="width:${(c.winrate*100).toFixed(0)}%;background:${wrCol(c.winrate)}"></i></span>${pct(c.winrate)}</span></td>
+    <td class="r num">${(+c.kda).toFixed(2)}</td><td class="r num">${sgn(c.golddiffat15)}</td></tr>`).join("");
+  const champBox = `<div class="pbox a-champ"><h3>챔피언 폭<span class="tip" tabindex="0" data-tip="많이 쓴 순 8개. 3경기 미만은 흐리게 표시. GD15 = 15분 맞라이너 대비 골드 차.">i</span></h3><table class="champ"><thead><tr><th>챔피언</th><th class="r">G</th><th class="r">승률</th><th class="r">KDA</th><th class="r">GD15</th></tr></thead><tbody>${champRows}</tbody></table></div>`;
+  const banBox = `<div class="pbox a-banpick"><h3>밴픽 시사점<small>추론</small></h3><ul class="bullets">${p.banpick.map(b=>`<li>${fold(b,60)}</li>`).join("")}</ul></div>`;
+  const sumBox = `<div class="pbox a-sum sum"><h3>스카우트 요약</h3><ul>${p.summary.map(b=>`<li>${fold(b,70)}</li>`).join("")}</ul></div>`;
 
   document.getElementById('app').innerHTML = `<div class="ps">
     <header class="head"><div class="in">
@@ -483,10 +576,20 @@ function renderPlayer(p){
       <span class="tag">${p.reviewed?"S7 검토 반영":"S7 미검토"} · 2026-08-25 기준</span>
     </div></header>
     <div class="grid">${left + radarBox + metBox + reportBox + sumBox + champBox + banBox}</div>
-    <div class="disclaim">"이 출처들이 이 선수를 이렇게 본다"는 요약이며 실제 기량과 다를 수 있음. 신뢰도: 강함 = 서로 다른 출처 2개 이상 + 기록과 맞음 · 보통 · 약함. 원문 인용과 링크는 로컬 프로필(research/profiles)에 있음.</div>
+    <div class="disclaim">"이 출처들이 이 선수를 이렇게 본다"는 요약이며 실제 기량과 다를 수 있음. 신뢰도 점: ●●● 강함(서로 다른 출처 2개 이상 + 기록과 맞음) · ●●○ 보통 · ●○○ 약함. 지표 이름·ⓘ에 마우스를 올리거나 누르면 설명. 긴 문장은 "더 보기"로 펼침. 원문 인용과 링크는 로컬 프로필(research/profiles)에 있음.</div>
   </div>`;
-  document.title = `${p.id} · T1 스카우팅 룸`;
+  document.title = `${p.id} · 2026 LCK 전력 리포트`;
+  syncReport();
 }
+
+/* 선수 페이지: 보고서 상자 높이 = 지표(레이더) 상자 높이, 넘치면 상자 안에서 스크롤 */
+function syncReport(){
+  const r = document.querySelector('.ps .a-radar'), b = document.querySelector('.ps .a-report');
+  if(!r || !b) return;
+  b.style.height = '0px';                 // 보고서가 줄 높이를 늘리지 않게 먼저 접고
+  b.style.height = r.offsetHeight + 'px'; // 레이더 상자의 본래 높이에 맞춤
+}
+addEventListener('resize', syncReport);
 
 function bindRows(){
   document.querySelectorAll('.st-row').forEach(r=>r.addEventListener('click',e=>{
@@ -497,9 +600,27 @@ function bindRows(){
 function route(){
   const h = location.hash.slice(1);
   if(h.startsWith("player-") && D.players[h.slice(7)]) renderPlayer(D.players[h.slice(7)]);
-  else { renderTeam(TEAM_BY_ID[h.slice(5)] || D.teams["T1"]); document.title = "T1 스카우팅 룸"; }
+  else { const t = TEAM_BY_ID[h.slice(5)] || D.teams["T1"]; renderTeam(t); document.title = `${t.name} · 2026 LCK 전력 리포트`; }
   window.scrollTo(0,0);
 }
+/* 말풍선: data-tip 이 있는 요소에 마우스를 올리거나 누르면 뜸, 다른 곳을 누르거나 스크롤하면 닫힘 */
+const POP = Object.assign(document.createElement('div'),{id:'pop',role:'tooltip'}); document.body.appendChild(POP);
+let popFor = null;
+function showPop(el){
+  popFor?.classList.remove('on'); popFor = el; el.classList.add('on');
+  POP.textContent = el.dataset.tip; POP.style.display = 'block';
+  const r = el.getBoundingClientRect(), w = POP.offsetWidth, h = POP.offsetHeight;
+  POP.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px';
+  POP.style.top = (r.bottom + 6 + h > innerHeight ? r.top - h - 6 : r.bottom + 6) + 'px';
+}
+function hidePop(){ POP.style.display = 'none'; popFor?.classList.remove('on'); popFor = null; }
+document.addEventListener('click', e=>{ const t = e.target.closest('[data-tip]'); if(t){ e.preventDefault(); showPop(t); } else hidePop(); });
+document.addEventListener('mouseover', e=>{ const t = e.target.closest('[data-tip]'); if(t && t!==popFor) showPop(t); });
+document.addEventListener('mouseout', e=>{ const t = e.target.closest('[data-tip]'); if(t && !t.contains(e.relatedTarget)) hidePop(); });
+document.addEventListener('focusin', e=>{ const t = e.target.closest('[data-tip]'); if(t) showPop(t); });
+document.addEventListener('focusout', hidePop);
+addEventListener('scroll', hidePop, {passive:true});
+window.addEventListener('hashchange',()=>{ hidePop(); });
 window.addEventListener('hashchange',route);
 route();
 </script>

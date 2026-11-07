@@ -1,7 +1,7 @@
 """선수 커리어(팀별 경기·승률)와 사진 주소 — Leaguepedia Cargo API
 
     python dashboard/career.py            # → dashboard/career/careers.json
-    python dashboard/build.py             # data.json·t1_scouting.html 에 반영
+    python dashboard/build.py             # data.json·report.html 에 반영
 
 - 경기: ScoreboardPlayers (Leaguepedia 선수 Statistics 페이지와 같은 원천). 공식 대회 전체(정규·플레이오프·국제전·KeSPA컵·CL 등)
 - 기간 끝 = 리서치 기간 끝 2026-08-25 (KST 23:59 = UTC 14:59)

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026 LCK 전력 리포트</title>
+<style>
+@font-face{font-family:"NoonnuBasicGothic";src:url("fonts/NoonnuBasicGothicRegular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+:root{--bg:#0d0d10;--panel:#16161b;--panel-2:#1d1d24;--fg:#f1f0ee;--mute:#8d8b96;--dim:#6b6975;--line:#2a2a33;--a:#e4002b;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:"NoonnuBasicGothic",system-ui,-apple-system,"Malgun Gothic",sans-serif;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+
+/* 첫 화면: 제목만 */
+.screen{position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden}
+main{flex:1;display:flex;flex-direction:column;justify-content:center;width:100%;max-width:1040px;margin:0 auto;
+  padding:48px max(24px,env(safe-area-inset-left,0px))}
+.top{font-size:14px;letter-spacing:.18em;color:var(--mute)}
+.top b{color:var(--a);font-weight:400}
+h1{font-weight:400;font-size:clamp(48px,9vw,112px);line-height:1.02;margin:22px 0 0;letter-spacing:-.01em}
+.bar{width:64px;height:4px;background:var(--a);margin:34px 0 24px}
+.sub{font-size:clamp(16px,2vw,19px);color:var(--mute);margin:0}
+a.open{align-self:flex-start;margin-top:44px;color:var(--fg);text-decoration:none;font-size:17px;border-bottom:1px solid var(--a);padding-bottom:4px}
+a.open:hover,a.open:focus-visible{color:var(--a)}
+a.open:focus-visible{outline:2px solid var(--a);outline-offset:6px}
+.foot{width:100%;max-width:1040px;margin:0 auto;padding:0 max(24px,env(safe-area-inset-left,0px)) 24px;font-size:13px;color:var(--mute);
+  display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.foot a{color:var(--mute);text-decoration:none}
+.foot a:hover{color:var(--fg)}
+
+/* 오른쪽 빈 공간: 3D로 도는 T1 로고 (같은 그림을 여러 장 겹쳐 두께를 냄) */
+.logo3d{position:absolute;right:max(10vw,60px);top:50%;width:min(38vw,520px);aspect-ratio:1.8;transform:translateY(-55%);
+  perspective:1100px;pointer-events:none;z-index:0}
+.logo3d::before{content:"";position:absolute;inset:-20%;background:radial-gradient(closest-side,rgba(228,0,43,.22),transparent 70%);filter:blur(10px)}
+.logo3d .spin{position:absolute;inset:0;transform-style:preserve-3d;animation:spin 14s linear infinite}
+.logo3d img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;backface-visibility:visible}  /* 정사각 파일의 위아래 여백을 잘라 날개 로고만 */
+.logo3d img.mid{filter:brightness(.45) saturate(1.2)}
+@keyframes spin{from{transform:rotateX(8deg) rotateY(0deg)}to{transform:rotateX(8deg) rotateY(360deg)}}
+@media (max-width:900px){.logo3d{opacity:.18;width:70vw;right:-10vw}}
+@media (prefers-reduced-motion:reduce){.logo3d .spin{animation:none;transform:rotateX(8deg) rotateY(-24deg)}}
+main,.foot{position:relative;z-index:1}
+
+/* 스크롤 유도: 하단 중앙 마우스 + 아래 화살표 */
+.scroll{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;
+  text-decoration:none;color:var(--fg);transition:opacity .3s ease}
+.scroll .mouse{width:24px;height:38px;border:2px solid currentColor;border-radius:13px;position:relative}
+.scroll .mouse::before{content:"";position:absolute;left:50%;top:7px;width:4px;height:7px;margin-left:-2px;border-radius:2px;background:currentColor;
+  animation:wheel 1.6s ease-in-out infinite}
+.scroll .chev{width:10px;height:10px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-top:-4px;
+  opacity:0;animation:chev 1.6s ease-in-out infinite}
+.scroll .chev:nth-of-type(2){animation-delay:.2s}
+.scroll .chev:nth-of-type(3){animation-delay:.4s}
+.scroll:hover,.scroll:focus-visible{color:var(--a)}
+.scroll:focus-visible{outline:2px solid var(--a);outline-offset:6px;border-radius:6px}
+.scroll.gone{opacity:0;pointer-events:none}
+@keyframes wheel{0%{transform:translateY(0);opacity:1}70%{transform:translateY(9px);opacity:0}100%{transform:translateY(0);opacity:0}}
+@keyframes chev{0%{opacity:0}40%{opacity:.9}80%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.scroll .mouse::before,.scroll .chev{animation:none;opacity:.8}}
+
+/* 끝까지 내리면: 같은 자리(하단 중앙)에 맨 위로 버튼 */
+.totop{position:fixed;left:50%;bottom:22px;width:52px;height:52px;margin-left:-26px;border-radius:50%;background:#000;color:#fff;
+  border:1px solid #3a3a44;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 18px #000a;
+  opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .25s ease,transform .25s ease,background .15s ease}
+.totop.on{opacity:1;transform:none;pointer-events:auto}
+.totop svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:3.2;stroke-linecap:butt;stroke-linejoin:miter}
+.totop:hover,.totop:focus-visible{background:var(--a);border-color:var(--a)}
+.totop:focus-visible{outline:2px solid #fff;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.totop{transition:none}}
+
+/* 스크롤하면: 정규시즌 순위 */
+.standings{max-width:1040px;margin:0 auto;padding:40px max(24px,env(safe-area-inset-left,0px)) 72px}
+.sec-h{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.sec-h h2{font-weight:400;font-size:30px;margin:0}
+.sec-h p{margin:0;color:var(--mute);font-size:13px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:10px 12px;text-align:left;white-space:nowrap}
+th{font-size:12px;font-weight:400;color:var(--mute);background:var(--panel);border-bottom:1px solid var(--line)}
+td{border-bottom:1px solid var(--line);font-size:16px}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--panel)}
+tr.t1 td{background:color-mix(in srgb,var(--a) 14%,var(--bg))}
+tr.cut td{border-bottom:2px dashed var(--dim)}
+.team{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--fg)}
+.team small{color:var(--mute);font-size:12.5px}
+.logo{width:34px;height:34px;flex:none;display:grid;place-items:center}
+.logo img{width:32px;height:32px;object-fit:contain}
+/* 어두운 로고(DK·DRX·브리온)는 배경에 묻혀서 흰 테두리 빛 */
+.logo.dark img{filter:drop-shadow(0 0 .6px #fff) drop-shadow(0 0 .6px #fff) drop-shadow(0 0 4px rgba(255,255,255,.45))}
+.logo b{font-weight:400;font-size:11px;color:var(--tc)}
+.wbar{width:140px;height:8px;background:var(--panel-2);border-radius:2px;overflow:hidden}
+.wbar i{display:block;height:100%}
+@media (max-width:640px){ .wbar{width:64px} td{font-size:15px} th,td{padding:9px 8px} .team small{display:none} }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="logo3d" id="logo3d" aria-hidden="true"><div class="spin" id="spin"></div></div>
+  <main>
+    <div class="top"><b>T1</b> 전력분석</div>
+    <h1>2026 LCK<br>전력 리포트</h1>
+    <div class="bar" aria-hidden="true"></div>
+    <p class="sub" id="sub"></p>
+    <a class="open" href="report.html#team-T1">리포트 열기 →</a>
+  </main>
+  <div class="foot"><span>내부 검토용 · <span id="built"></span></span></div>
+  <a class="scroll" id="scroll" href="#standings" aria-label="아래로 스크롤해서 정규시즌 순위 보기"><span class="mouse"></span><span class="chev"></span><span class="chev"></span><span class="chev"></span></a>
+</div>
+
+<section class="standings" id="standings" aria-labelledby="h-st">
+  <div class="sec-h"><h2 id="h-st">LCK 정규시즌 순위</h2>
+    <p>Rounds 1–4 · 매치 기준 · 2026-08-25까지. 점선 위 6팀 = 플레이오프권. 팀을 누르면 그 팀 페이지로 갑니다.</p></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>팀</th><th class="r">승</th><th class="r">패</th><th class="r">세트</th><th class="r">득실</th><th class="r">매치 승률</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+</section>
+
+<button class="totop" id="totop" type="button" aria-label="맨 위로"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l8-8 8 8"/></svg></button>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const C = JSON.parse(document.getElementById('data').textContent);
+const COLOR = {"T1":"#e4002b","Gen.G":"#b8955a","Hanwha Life Esports":"#f47b20","KT Rolster":"#c9c9cf","Dplus Kia":"#2ed3c1",
+  "Nongshim RedForce":"#d7263d","BNK FEARX":"#ffc81e","HANJIN BRION":"#1fae5b","Kiwoom DRX":"#3d74ff","DN SOOPers":"#8b6bff"};
+const SHORT = {"T1":"T1","Gen.G":"GEN","Hanwha Life Esports":"HLE","KT Rolster":"KT","Dplus Kia":"DK","Nongshim RedForce":"NS",
+  "BNK FEARX":"BFX","HANJIN BRION":"BRO","Kiwoom DRX":"DRX","DN SOOPers":"DNS"};
+// 3D 로고: Leaguepedia T1 로고(큰 크기)를 14장 겹쳐 두께를 만듦. 못 불러오면 숨김
+(()=>{
+  const box = document.getElementById('logo3d'), src = C.t1_hero;
+  if(!src){ box.remove(); return; }
+  const N = 14, depth = 1.6, spin = document.getElementById('spin');
+  spin.innerHTML = Array.from({length:N},(_,i)=>`<img src="${src}" alt="" referrerpolicy="no-referrer" class="${i===0||i===N-1?"":"mid"}" style="transform:translateZ(${((i-(N-1)/2)*depth).toFixed(1)}px)">`).join("");
+  spin.querySelector('img').addEventListener('error',()=>box.remove());
+})();
+const DARK_LOGO = new Set(["Dplus Kia","Kiwoom DRX","HANJIN BRION"]);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+document.getElementById('sub').textContent = `선수 ${C.n_players}명 · 팀 ${C.teams.length}개 · ${C.period_from.replaceAll("-",".")} – ${C.period_to.replaceAll("-",".")}`;
+document.getElementById('built').textContent = `${C.built.replaceAll("-",".")} 작성`;
+
+// 로고는 Leaguepedia 주소에서 불러옴. 못 불러오면 팀 약칭 글자로 대신함
+document.getElementById('rows').innerHTML = C.teams.map((t,i)=>{
+  const col = COLOR[t.name] || "#888", wr = t.w/(t.w+t.l), href = `report.html#team-${esc(t.id)}`;
+  const logo = t.logo
+    ? `<span class="logo${DARK_LOGO.has(t.name)?" dark":""}" style="--tc:${col}"><img src="${esc(t.logo)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'${SHORT[t.name]||''}'}))"></span>`
+    : `<span class="logo" style="--tc:${col}"><b>${esc(SHORT[t.name]||"")}</b></span>`;
+  return `<tr class="${t.name==="T1"?"t1":""} ${i===5?"cut":""}" data-href="${href}">
+    <td class="num">${t.rank}</td>
+    <td><a class="team" href="${href}">${logo}<span>${esc(t.name)} <small>${esc(t.name_ko||"")}</small></span></a></td>
+    <td class="r num">${t.w}</td><td class="r num">${t.l}</td><td class="r num">${t.sw}–${t.sl}</td>
+    <td class="r num">${t.diff>0?"+":""}${t.diff}</td>
+    <td class="r num">${(wr*100).toFixed(1)}%</td></tr>`;
+}).join("");
+// 조금이라도 내리면 스크롤 표시를 숨김
+const totop = document.getElementById('totop');
+function onScroll(){
+  document.getElementById('scroll').classList.toggle('gone', scrollY>40);
+  totop.classList.toggle('on', scrollY + innerHeight >= document.documentElement.scrollHeight - 40);  // 끝까지 내렸을 때만
+}
+addEventListener('scroll', onScroll, {passive:true}); addEventListener('resize', onScroll); onScroll();
+totop.addEventListener('click',()=>{ history.replaceState(null,"",location.pathname+location.search);
+  scrollTo({top:0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); });
+document.querySelectorAll('tbody tr').forEach(r=>r.addEventListener('click',e=>{ if(!e.target.closest('a')) location.href = r.dataset.href; }));
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
     python dashboard/build.py            # data.json 먼저
     python dashboard/player_sample.py    # → dashboard/player_sample_Doran.html
 
-본 대시보드(t1_scouting.html)는 건드리지 않음. 레이아웃이 확정되면 template.html 의 renderPlayer 로 옮길 것.
+본 대시보드(report.html)는 건드리지 않음. 레이아웃이 확정되면 template.html 의 renderPlayer 로 옮길 것.
 - 사진: Leaguepedia 이미지 주소를 그대로 불러옴 (파일로 받지 않음, 인터넷 연결 필요, 실패하면 실루엣)
 - 커리어: 2018~2025 = Leaguepedia 선수 통계 페이지(대회별 경기·승, career/{선수}.csv), 2026 = OE 경기 기록 08-25까지
 """

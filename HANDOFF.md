@@ -16,13 +16,13 @@ Claude Code를 쓴다면 압축을 푼 폴더에서 열면 `CLAUDE.md`를 자동
 
 ## 2. 대시보드
 
-- 결과물: `dashboard/t1_scouting.html` (파일 하나, 데이터 내장. 브라우저로 바로 열림). **선수 사진은 Leaguepedia 주소에서 불러오므로 인터넷 연결이 필요** (끊겨 있으면 실루엣이 대신 나옴). claude.ai 아티팩트로는 올리지 않음 (아티팩트는 외부 이미지를 막음)
+- 결과물: `dashboard/report.html` (파일 하나, 데이터 내장. 표지는 `dashboard/index.html`. 브라우저로 바로 열림). **선수 사진은 Leaguepedia 주소에서 불러오므로 인터넷 연결이 필요** (끊겨 있으면 실루엣이 대신 나옴). claude.ai 아티팩트로는 올리지 않음 (아티팩트는 외부 이미지를 막음)
 - 다시 만들기:
   ```bash
   pip install pandas pyyaml
   python dashboard/build.py
   ```
-  → `dashboard/data.json` 과 `dashboard/t1_scouting.html` 을 새로 씀 (토큰 0, 몇 초)
+  → `dashboard/data.json`, `dashboard/report.html`, `dashboard/index.html`(표지) 을 새로 씀 (토큰 0, 몇 초)
 - 화면 구성
   - 표지(기본 = T1): 팀 이름 크게 + 08-25 기준 주전 5명 카드(사진) + 팀 요약·운영 지표
   - 스크롤하면 LCK 정규시즌 순위 (Rounds 1–4, 08-25까지). 팀을 누르면 그 팀 표지
@@ -54,6 +54,12 @@ Claude Code를 쓴다면 압축을 푼 폴더에서 열면 `CLAUDE.md`를 자동
 | 경기 기록 | `data/processed/2026/a_player_games.csv` (Oracle's Elixir) | **08-25 기준 로스터**, 소속 이력 |
 | 일정·로스터 | `data/processed/2026/f_match_schedule.csv`, `f_rosters.csv` (Leaguepedia) | 순위, 생년월일·국적 |
 | 커리어·사진 | `dashboard/career/careers.json` (Leaguepedia) | 커리어 표, 사진 주소. `dashboard/photos/{선수}.png·jpg·webp` 가 있으면 그 파일을 페이지에 넣음 |
+| OE 원본 | `data/inven_2026/games/*.csv` (하나만) | 정글 15분 킬+어시스트. 없거나 2개 이상이면 그 지표만 빠짐 |
+| 리서치 패치 창 | `src/research/patch_windows.py` (`research/config/tournament_patches.csv`) | 능력치 계산 경기 범위 |
+| 평가 집계 | `research/eval/per_target.csv` | 표지의 주장 수 |
+| 챔피언 한글 이름 | `dashboard/career/champ_ko.json` (Data Dragon ko_KR) | 프로필 문장·챔피언 폭의 영어 이름 → 한글 |
+| 팀 로고 주소 | `dashboard/career/team_logos.json` (Leaguepedia) | 표지·순위 로고 (주소만, 열 때 인터넷 필요) |
+| 글꼴 | `dashboard/fonts/NoonnuBasicGothicRegular.ttf` | 표지·리포트 본문 글꼴 |
 
 커리어 표 기준: Leaguepedia 공식 대회 전체(정규·플레이오프·국제전·KeSPA컵·CL), 2026-08-25까지. 국가대표·올스타 제외. 이름만 바뀐 같은 구단(SKT T1→T1, DAMWON→DWG KIA→Dplus Kia 등)은 이어지면 한 줄. 기간은 계약일이 아니라 첫·마지막 경기 달
 
@@ -77,7 +83,7 @@ Claude Code를 쓴다면 압축을 푼 폴더에서 열면 `CLAUDE.md`를 자동
 handoff/
 ├─ HANDOFF.md, CLAUDE.md, requirements.txt, .env.example
 ├─ docs/                     결정·재개 절차·계획·밴픽 파이프라인
-├─ dashboard/                build.py, template.html, data.json, t1_scouting.html, career.py, career/, 도란 샘플
+├─ dashboard/                build.py, template.html, cover_template.html, data.json, index.html(표지), report.html, fonts/, career.py, career/, 도란 샘플
 ├─ research/config/          명단·별칭·검색어·기간·지시문
 ├─ research/profiles/        확정 프로필 68개 (.md) + stats/ + team_stats/
 ├─ research/eval/            품질 지표 (집계만)
