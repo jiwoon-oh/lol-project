@@ -22,6 +22,7 @@ mcp
 duckdb
 kiwipiepy
 scikit-learn
+lightgbm
 scipy
 matplotlib
 koreanize-matplotlib

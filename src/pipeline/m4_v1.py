@@ -185,6 +185,8 @@ def build_rows(a, games, ds_cache, ex_cache, lineup, champs, pgames, weight_of, 
             cum.add(pgames[pi])
             pi += 1
         fearless = set(a[(a["MatchId"] == mid) & (a["N_GameInMatch"] < n) & (a["action"] == "pick")]["cid"])
+        if "fearless" in ga.columns and not bool(ga["fearless"].iloc[0]):
+            fearless = set()  # 피어리스가 아닌 리그 (P2, m4_v6.py)
         ds = ds_cache[D]
         pool_sorted, pool_share, base60 = ex_cache[D]
         meta_rank = {c: i + 1 for i, c in enumerate(sorted(champs, key=lambda c: -ds.meta[c]))}
