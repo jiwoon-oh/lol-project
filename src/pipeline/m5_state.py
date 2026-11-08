@@ -160,6 +160,12 @@ class StateBuilder:
         self._series(rows, mid, n)
         return rows
 
+    def add_records(self, recs: pd.DataFrame):
+        """같은 시리즈 앞 세트 기록(20줄, is_winner 포함)을 기록 표에 더함 → 피어리스 제외 · 시리즈 특징 · 승패가 학습 때와 같은 방식으로 계산됨."""
+        self.a = pd.concat([self.a, recs.drop(columns=[c for c in ("ghost",) if c in recs.columns])], ignore_index=True)
+        self.wins = V7.winners(self.a)
+        self._index()
+
     def lck_patch(self, D):
         g = self.gm[(self.gm["league"] == "LCK") & (self.gm["day"] < D)].sort_values("day")
         return g["patch"].iloc[-1]
@@ -232,6 +238,7 @@ def rollout(FP, t, fp, lp, taken0, open0, share, role_ok, role_any, R, seed=0, f
       가중 = (지금 굴리기의 빈 포지션 비중 합 + 0.02) / (지금 상태 빈 포지션 비중 합 + 0.02). 다음 단계(s = t)는 M4 확률 그대로
       (2026-11-08 재생 검증: '비중 0.1 이상만' 거르기는 다음 단계 로그 손실을 2.540 → 2.591 로 나쁘게 함 — 실제 비주류·플렉스 픽을 지움)
     forced = 단계 t 에 강제로 할 챔피언 번호 (None = FP[t] 로 뽑음). 같은 seed = 같은 난수 (후보 간 공통 난수).
+    VAL = 챔피언 × 포지션 값 행렬, 또는 {팀: 행렬} (팀·선수별 값 — 2026-11-08 숙련 편차 반영)
     반환: C (21 × 챔피언) 단계별 선택 횟수, val {팀: R 배열} (VAL 이 있으면 픽한 챔피언 값 합),
           E (21 × 챔피언) 단계별 '그 순간 뽑기 분포'의 굴리기 평균 = P(단계 s 에 c) 의 매끄러운 추정 (횟수보다 잡음이 적음, 기댓값은 같음)."""
     rng = np.random.default_rng(seed)
@@ -271,5 +278,5 @@ def rollout(FP, t, fp, lp, taken0, open0, share, role_ok, role_any, R, seed=0, f
             ro = np.argmax(np.where(op[tm], share[idx] + 1e-9, -1), 1)
             op[tm][ar, ro] = False
             if VAL is not None:
-                val[tm] += VAL[idx, ro]
+                val[tm] += (VAL[tm] if isinstance(VAL, dict) else VAL)[idx, ro]
     return C, val, E

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T1 밴픽 추천</title>
+<style>
+@font-face{font-family:"NoonnuBasicGothic";src:url("fonts/NoonnuBasicGothicRegular.ttf") format("truetype");font-weight:400;font-display:swap}
+/* 기존 스카우팅 리포트(template.html)와 같은 어두운 방 + 팀 색. 위 = 중계 화면식 밴픽 판, 아래 = 추천 카드 + 챔피언 선택판 */
+:root{
+  --bg:#0b0c10; --panel:#14151b; --panel-2:#1b1d25; --line:#2a2c36;
+  --fg:#f1f0ee; --mute:#9a98a3; --dim:#6b6975;
+  --gold:#c8aa6e; --gold-2:#f0e6d2; --blue:#2d7ff9; --red:#e84057;
+  --own:#3d8bfd; --deny:#2fbf71; --resp:#f08a2c;
+  --good:#5fd38a; --bad:#ef6a5b;
+  --display:"NoonnuBasicGothic",system-ui,"Malgun Gothic",sans-serif;
+  --body:"NoonnuBasicGothic",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(1200px 500px at 50% -120px,#18233a 0,transparent 70%),var(--bg);color:var(--fg);font-family:var(--body);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+button{font-family:inherit;color:inherit;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1440px;margin:0 auto;padding:14px 18px 40px}
+
+/* ---------- 머리 */
+.top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.home{width:46px;height:46px;border-radius:10px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;flex:none}
+.home svg{width:22px;height:22px}
+.ttl .eye{font-size:13px;letter-spacing:.18em;color:var(--mute)}
+.ttl h1{margin:0;font-family:var(--display);font-weight:400;font-size:30px;line-height:1.1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ttl h1 .t{color:var(--gold)}
+.badge{font-size:12px;padding:3px 10px;border-radius:999px;background:#232634;color:#cfd3e2;letter-spacing:.02em}
+.top .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.winbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 14px;text-align:right}
+.winbox .v{font-size:24px;color:var(--gold);line-height:1.1}
+.winbox .s{font-size:11.5px;color:var(--mute)}
+.btn{border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:8px 12px;font-size:13.5px}
+.btn:hover{border-color:var(--gold)}
+.btn.gold{background:linear-gradient(180deg,#d8bb7d,#a8884d);color:#1a1307;border-color:#d8bb7d}
+.toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute)}
+.toggle input{accent-color:var(--gold)}
+
+/* ---------- 밴픽 판 (중계 화면식) */
+.board{display:grid;grid-template-columns:1fr 230px 1fr;gap:0;background:#07080b;border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative}
+.side{display:flex;flex-direction:column}
+.side .bans{display:flex;gap:6px;padding:8px 10px;background:linear-gradient(180deg,#11131a,#0b0c11);align-items:center}
+.side.red .bans{justify-content:flex-end}
+.side .bans .lbl{font-size:11px;color:var(--mute);letter-spacing:.12em;margin:0 6px}
+.ban{width:40px;height:40px;border-radius:4px;background:#191b22 center/cover;position:relative;border:1px solid #262833;overflow:hidden}
+.ban.f{filter:grayscale(.85) brightness(.75)}
+.ban.f::after{content:"";position:absolute;left:-4px;right:-4px;top:50%;height:2px;background:var(--red);transform:rotate(-45deg);box-shadow:0 0 4px #000}
+.ban.cur,.slot.cur{outline:2px solid var(--gold);outline-offset:-2px;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 18px color-mix(in srgb,var(--gold) 60%,transparent)}}
+.picks{display:grid;grid-template-columns:repeat(5,1fr);height:270px}
+.slot{position:relative;background:#101219 center 18%/cover no-repeat;border-right:1px solid #05060a;overflow:hidden}
+.slot::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(4,5,8,.92))}
+.slot .pl{position:absolute;left:8px;bottom:26px;z-index:1;font-size:17px;letter-spacing:.06em;text-transform:uppercase;text-shadow:0 1px 6px #000}
+.slot .ch{position:absolute;left:8px;bottom:8px;z-index:1;font-size:12.5px;color:var(--gold-2)}
+.slot .ro{position:absolute;right:6px;top:6px;z-index:1;font-size:11px;padding:1px 7px;border-radius:9px;background:rgba(0,0,0,.6);color:#cfd3e2}
+.slot.empty .pl{color:var(--dim)}
+.slot .us{position:absolute;inset:0;border-bottom:3px solid transparent}
+.side.blue .slot .us{border-color:var(--blue)}
+.side.red .slot .us{border-color:var(--red)}
+.mid{background:radial-gradient(160px 200px at 50% 45%,#1a1e2b,#090a0e);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;border-left:1px solid #05060a;border-right:1px solid #05060a}
+.mid .logos{display:flex;align-items:center;gap:14px}
+.mid .logo{width:62px;height:62px;border-radius:50%;background:#14161e center/70% no-repeat;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--mute)}
+.mid .logo.blue{border-color:var(--blue)} .mid .logo.red{border-color:var(--red)}
+.mid .vs{color:var(--gold);font-size:14px}
+.mid .sides{display:flex;justify-content:space-between;width:100%;font-size:11px;letter-spacing:.14em;color:var(--mute)}
+.mid .fp{color:var(--gold-2)}
+.mid .setno{font-size:13px;color:#cfd3e2}
+.mid .phase{display:flex;gap:4px}
+.mid .phase span{font-size:11px;padding:2px 7px;border-radius:4px;background:#171a24;color:var(--dim)}
+.mid .phase span.on{background:var(--gold);color:#1a1307}
+.mid .dots{display:grid;grid-template-columns:repeat(10,10px);gap:4px}
+.mid .dot{width:10px;height:10px;border-radius:2px;background:#20232e}
+.mid .dot.blue{background:var(--blue)} .mid .dot.red{background:var(--red)}
+.mid .dot.ban{opacity:.55}
+.mid .dot.cur{outline:2px solid var(--gold);outline-offset:1px}
+.mid .elo{font-size:11.5px;color:var(--mute);text-align:center}
+.teamname{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0d0f15;border-bottom:1px solid #05060a}
+.side.red .teamname{flex-direction:row-reverse;text-align:right}
+.teamname .n{font-family:var(--display);font-size:20px;letter-spacing:.04em}
+.teamname .tag{font-size:11px;color:var(--mute);letter-spacing:.14em}
+.teamname .bar{width:4px;height:22px;border-radius:2px}
+
+/* ---------- 아래 */
+.main{display:grid;grid-template-columns:1fr 380px;gap:16px;margin-top:16px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.panel h2{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.panel h2 .t{color:var(--gold)}
+.panel .note{font-size:12.5px;color:var(--mute);margin-bottom:12px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.card .art{height:170px;background:#11131a;position:relative;overflow:hidden}
+.card .art img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.card .art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15) 0,transparent 30%,rgba(18,20,28,.96) 100%)}
+.card .rank{position:absolute;left:10px;top:10px;z-index:1;font-size:12px;padding:3px 10px;border-radius:999px;background:rgba(0,0,0,.65)}
+.card .tie{position:absolute;right:10px;top:10px;z-index:1;font-size:11.5px;padding:3px 9px;border-radius:999px;background:rgba(200,170,110,.85);color:#1a1307}
+.card .hd{position:absolute;left:12px;right:12px;bottom:8px;z-index:1;display:flex;align-items:flex-end;justify-content:space-between}
+.card .nm{font-family:var(--display);font-size:28px;line-height:1}
+.card .pct{font-size:30px;color:var(--gold);line-height:1}
+.card .bd{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1}
+.card .sub{font-size:12.5px;color:var(--mute)}
+.seg{display:flex;height:6px;border-radius:3px;background:#262935;overflow:hidden}
+.seg i{display:block;height:100%}
+.nums{font-size:12.5px;color:#cfd3e2}
+.nums b{font-weight:400;color:var(--fg)}
+.dl{font-size:12px;color:var(--mute)}
+.resp{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--mute);flex-wrap:wrap}
+.resp .r{display:flex;align-items:center;gap:4px}
+.resp img{width:26px;height:26px;border-radius:4px;border:1px solid var(--line)}
+.chips{display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--line);padding-top:8px}
+.chip{display:flex;gap:8px;align-items:baseline;font-size:12.8px}
+.chip .k{font-size:11px;padding:1px 7px;border-radius:4px;flex:none}
+.k.주력,.k.숙련{background:#123826;color:#7be3a6}
+.k.뺏기,.k.상대.확률{background:#3a1820;color:#ff8fa0}
+.k.조합{background:#13294a;color:#8cbcff}
+.k.상성,.k.숙련.약함,.k.상대.숙련,.k.상대.주력{background:#3a2a12;color:#ffc36e}
+.card .go{margin-top:auto;align-self:flex-end}
+.more{margin-top:14px;width:100%;border-collapse:collapse;font-size:13px}
+.more td,.more th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.more th{color:var(--mute);font-weight:400;font-size:12px}
+.more img{width:26px;height:26px;border-radius:4px;vertical-align:middle;margin-right:6px}
+.more tr:hover td{background:#1c1f29;cursor:pointer}
+.pairs{margin-top:16px}
+.pairs h3{font-family:var(--display);font-weight:400;font-size:17px;margin:0 0 8px;color:var(--gold-2)}
+.pair{display:flex;align-items:center;gap:12px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--panel-2)}
+.pair img{width:40px;height:40px;border-radius:6px}
+.pair .w{margin-left:auto;font-size:20px;color:var(--gold)}
+.pair .c{font-size:12px;color:var(--mute)}
+.pred{display:flex;flex-direction:column;gap:6px}
+.pr{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;background:var(--panel-2);border:1px solid var(--line);cursor:pointer}
+.pr:hover{border-color:var(--gold)}
+.pr img{width:34px;height:34px;border-radius:5px}
+.pr .pb{flex:1;height:6px;background:#262935;border-radius:3px;overflow:hidden}
+.pr .pb i{display:block;height:100%;background:var(--red)}
+.pr .p{width:46px;text-align:right}
+.spin{display:flex;align-items:center;gap:10px;color:var(--mute);padding:30px 0;justify-content:center}
+.spin::before{content:"";width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:r 1s linear infinite}
+@keyframes r{to{transform:rotate(360deg)}}
+
+/* 챔피언 선택판 */
+.picker .tools{display:flex;gap:8px;margin-bottom:8px}
+.picker input{flex:1;background:#0f1016;border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--fg);font-family:inherit}
+.roles{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.roles button{font-size:12px;padding:4px 9px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2)}
+.roles button.on{background:var(--gold);color:#1a1307;border-color:var(--gold)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px;max-height:560px;overflow:auto;padding-right:4px}
+.cg{display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px;border-radius:6px;border:1px solid transparent;background:none}
+.cg img{width:48px;height:48px;border-radius:5px;background:#191b22}
+.cg span{font-size:10.5px;color:var(--mute);max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cg:hover{border-color:var(--gold)}
+.cg.x{opacity:.22;pointer-events:none;filter:grayscale(1)}
+.picker .who{font-size:12.5px;color:var(--mute);margin-bottom:8px}
+
+/* 시작 · 결과 */
+.modal{position:fixed;inset:0;background:rgba(5,6,9,.82);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.on{display:flex}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;max-width:760px;width:100%}
+.mbox h2{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:26px}
+.teams{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.tb{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);text-align:left}
+.tb img{width:34px;height:34px;object-fit:contain}
+.tb.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.tb .e{font-size:11.5px;color:var(--mute)}
+.opts{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+.seg2{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg2 button{border:0;background:var(--panel-2);padding:7px 14px;font-size:13px}
+.seg2 button.on{background:var(--gold);color:#1a1307}
+.foot{font-size:12px;color:var(--mute);margin-top:10px;line-height:1.6}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#232634;border:1px solid var(--line);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:.2s;z-index:60}
+.toast.on{opacity:1}
+@media (max-width:1100px){.main{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}.board{grid-template-columns:1fr 150px 1fr}.picks{height:200px}}
+@media (max-width:700px){.cards{grid-template-columns:1fr}.board{grid-template-columns:1fr}.mid{flex-direction:row;flex-wrap:wrap}.teams{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <button class="home" id="homeBtn" title="새 경기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button>
+    <div class="ttl"><div class="eye" id="eye">—</div><h1 id="h1">T1 밴픽 추천</h1></div>
+    <div class="right">
+      <label class="toggle"><input type="checkbox" id="autoOpp" checked> 상대 자동 진행</label>
+      <button class="btn" id="undoBtn">↶ 되돌리기</button>
+      <div class="winbox"><div class="v num" id="winNow">—</div><div class="s" id="winBase">—</div></div>
+    </div>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="main">
+    <div class="panel" id="panel"></div>
+    <div class="panel picker">
+      <h2>챔피언 <span class="t" style="font-size:15px" id="pickWho"></span></h2>
+      <div class="who" id="pickHint">누르면 지금 차례에 그 챔피언을 고릅니다</div>
+      <div class="tools"><input id="q" placeholder="챔피언 검색 (한글·영문)"></div>
+      <div class="roles" id="roles"></div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="setup"><div class="mbox">
+  <h2>새 경기 — 상대 고르기</h2>
+  <div class="note" style="color:var(--mute);font-size:13px">가상 경기일 2026-08-26 · 자료는 08-25 까지 (리서치 기간). 라인업 = 08-25 이전 마지막 LCK 경기</div>
+  <div class="teams" id="teams"></div>
+  <div class="opts">
+    <div><div class="dl" style="margin-bottom:4px">픽 순서 (First Selection)</div><div class="seg2" id="optFirst"><button data-v="0" class="on">T1 후픽</button><button data-v="1">T1 선픽</button></div></div>
+    <div><div class="dl" style="margin-bottom:4px">진영</div><div class="seg2" id="optSide"><button data-v="1" class="on">T1 블루</button><button data-v="0">T1 레드</button></div></div>
+  </div>
+  <button class="btn gold" id="startBtn">시작</button>
+  <div class="foot">상대 차례는 M4 예측 1순위로 자동 진행됩니다 (끄면 상대 실제 선택을 챔피언 판에서 직접 입력). T1 차례마다 몬테카를로로 남은 드래프트를 굴려 추천합니다.<br>예상 승률 = 팀 실력 차(Elo)·진영 + 챔피언 이길 가치(시간대 골드 경로) + 선수 숙련 편차. 리허설로 검증한 건 "상대가 무엇을 고를지" 확률이고, 승률은 참고치입니다.</div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const THEMES = {"T1":{short:"T1",a:"#e4002b"},"Gen.G":{short:"GEN",a:"#b8955a"},"Hanwha Life Esports":{short:"HLE",a:"#f47b20"},
+"KT Rolster":{short:"KT",a:"#c9c9cf"},"Dplus Kia":{short:"DK",a:"#2ed3c1"},"Nongshim RedForce":{short:"NS",a:"#d7263d"},
+"BNK FEARX":{short:"BFX",a:"#ffc81e"},"HANJIN BRION":{short:"BRO",a:"#1fae5b"},"Kiwoom DRX":{short:"DRX",a:"#3d74ff"},"DN SOOPers":{short:"DNS",a:"#8b6bff"}};
+const PHASES=[["1밴",1,6],["1픽",7,12],["2밴",13,16],["2픽",17,20]];
+let META=null, ST=null, REC=null, ROLE="ALL", SETUP={opp:null,first:0,blue:1}, busy=false, autoTimer=null;
+const $=s=>document.querySelector(s);
+const sq=id=>`https://ddragon.leagueoflegends.com/cdn/${META.ddragon}/img/champion/${id}.png`;
+const ld=id=>`https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${id}_0.jpg`;
+const cen=id=>`https://ddragon.leagueoflegends.com/cdn/img/champion/centered/${id}_0.jpg`;
+const spl=id=>`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${id}_0.jpg`;
+function fb(img){const l=(img.dataset.fb||"").split("|").filter(Boolean); if(!l.length){img.onerror=null;img.style.display="none";return} img.src=l.shift(); img.dataset.fb=l.join("|")}
+const ko=id=>(META.champs.find(c=>c.id===id)||{}).ko||id;
+const pct=(v,d=1)=>(v*100).toFixed(d)+"%";
+const sgn=(v,d=1)=>(v>=0?"+":"")+v.toFixed(d);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2200)}
+async function api(path,body){
+  const r=await fetch(path,body===undefined?{}:{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json(); if(!r.ok) throw new Error(j.error||r.status); return j;
+}
+const short=t=>(THEMES[t]||{short:t}).short, color=t=>(THEMES[t]||{a:"#888"}).a;
+const phaseOf=s=>PHASES.find(p=>s>=p[1]&&s<=p[2])[0];
+
+// ---------------- 시작 화면
+function openSetup(){
+  const opps=META.teams.filter(t=>t.name!==META.us);
+  $("#teams").innerHTML=opps.map(t=>`<button class="tb ${SETUP.opp===t.name?"on":""}" data-t="${esc(t.name)}">${t.logo?`<img src="${t.logo}" alt="">`:""}<div><div>${esc(t.name)}</div><div class="e">Elo ${t.elo}</div></div></button>`).join("");
+  $("#teams").querySelectorAll(".tb").forEach(b=>b.onclick=()=>{SETUP.opp=b.dataset.t;openSetup()});
+  $("#setup").classList.add("on");
+}
+for(const [id,key] of [["#optFirst","first"],["#optSide","blue"]]){
+  $(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{SETUP[key]=+b.dataset.v;$(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))});
+}
+$("#startBtn").onclick=async()=>{
+  if(!SETUP.opp){toast("상대 팀을 고르세요");return}
+  $("#setup").classList.remove("on");
+  setState(await api("/api/new",{opp:SETUP.opp,t1_first:!!SETUP.first,t1_blue:!!SETUP.blue}));
+};
+$("#homeBtn").onclick=openSetup;
+
+// ---------------- 밴픽 판
+function renderBoard(){
+  const s=ST, cur=s.done?null:s.step;
+  const sideHTML=(team,cls)=>{
+    const mine=s.steps.filter(x=>x.team===team);
+    const bans=mine.filter(x=>x.action==="ban"), picks=mine.filter(x=>x.action==="pick");
+    const lu=s.lineup[team]||{};
+    const banH=bans.map(b=>`<div class="ban ${b.cid?"f":""} ${b.step===cur?"cur":""}" style="${b.cid?`background-image:url(${sq(b.cid)})`:""}" title="${esc(b.name||"")}"></div>`).join("");
+    const pickH=picks.map(p=>{
+      const pl=p.role?lu[p.role]:null;
+      return `<div class="slot ${p.cid?"":"empty"} ${p.step===cur?"cur":""}" style="${p.cid?`background-image:url(${ld(p.cid)})`:""}">
+        ${p.cid?`<span class="ro">${META.pos_ko[p.role]||""}</span><div class="pl">${esc(pl||"")}</div><div class="ch">${esc(p.name)}</div><div class="us"></div>`:`<div class="pl">${p.step===cur?"선택 중":""}</div>`}</div>`}).join("");
+    return `<div class="side ${cls}"><div class="teamname"><span class="bar" style="background:${color(team)}"></span><span class="n">${esc(team)}</span><span class="tag">${cls==="blue"?"BLUE SIDE":"RED SIDE"}${s.fp===team?" · 1ST PICK":""}</span></div>
+      <div class="bans">${cls==="red"?banH+'<span class="lbl">BAN</span>':'<span class="lbl">BAN</span>'+banH}</div><div class="picks">${pickH}</div></div>`;
+  };
+  const lg=t=>(META.teams.find(x=>x.name===t)||{}).logo;
+  const dots=s.steps.map(x=>`<span class="dot ${x.cid?(x.team===s.blue?"blue":"red"):""} ${x.action==="ban"?"ban":""} ${x.step===cur?"cur":""}" title="${x.step}단계 ${x.team} ${x.action==="ban"?"밴":"픽"} ${esc(x.name||"")}"></span>`).join("");
+  const mid=`<div class="mid">
+    <div class="setno">${s.set}세트 · 피어리스 ${s.fearless.length}개 잠김</div>
+    <div class="logos"><div class="logo blue" style="${lg(s.blue)?`background-image:url(${lg(s.blue)})`:""}">${lg(s.blue)?"":short(s.blue)}</div><span class="vs">VS</span><div class="logo red" style="${lg(s.red)?`background-image:url(${lg(s.red)})`:""}">${lg(s.red)?"":short(s.red)}</div></div>
+    <div class="phase">${PHASES.map(p=>`<span class="${cur&&phaseOf(cur)===p[0]?"on":""}">${p[0]}</span>`).join("")}</div>
+    <div class="dots">${dots}</div>
+    <div class="elo">Elo ${short(s.blue)} ${s.elo[s.blue]} · ${short(s.red)} ${s.elo[s.red]}<br>패치 26.16 · 가상 08-26</div></div>`;
+  $("#board").innerHTML=sideHTML(s.blue,"blue")+mid+sideHTML(s.red,"red");
+}
+
+// ---------------- 머리
+function renderTop(){
+  const s=ST;
+  if(s.done){$("#eye").textContent="드래프트 끝";$("#h1").innerHTML=`<span class="t">${s.set}세트</span> 결과`}
+  else{
+    const what=s.action==="ban"?"밴":"픽";
+    $("#eye").textContent=`${s.step} / 20 단계 · ${short(s.team)} ${what}`;
+    $("#h1").innerHTML=s.us_turn?`<span class="t">T1</span> ${what} 차례 — M5 추천 <span class="badge">${phaseOf(s.step)}${s.pair_turn?" · 두 장 연속":""}</span>`
+      :`${esc(s.team)} ${what} 차례 <span class="badge">M4 상대 예측</span>`;
+  }
+  $("#winNow").textContent=pct(s.win_now);
+  $("#winBase").textContent=`지금까지 픽 기준 T1 승률 · 실력 차·진영만 ${pct(s.win_base)}`;
+  $("#pickWho").textContent=s.done?"":(s.us_turn?"→ T1 ":"→ "+short(s.team)+" ")+(s.done?"":(s.action==="ban"?"밴":"픽"));
+}
+
+// ---------------- 추천 카드
+function cardHTML(c,i,act){
+  const parts=act==="pick"?[["own",c.own],["deny",c.deny],["resp",c.resp_delta]]:[["deny",c.threat],["resp",c.resp_delta]];
+  const tot=parts.reduce((a,[,v])=>a+Math.abs(v),0)||1;
+  const seg=parts.map(([k,v])=>`<i style="width:${(Math.abs(v)/tot*100).toFixed(1)}%;background:var(--${k})"></i>`).join("");
+  const sub=act==="pick"?`${esc(c.role_ko)} · ${esc(c.player||"")} · 평소 고를 확률 ${pct(c.habit)}`:`상대가 남은 픽에서 고를 확률 ${pct(c.p_opp,0)} · T1 평소 밴 ${pct(c.habit,0)}`;
+  const nums=act==="pick"?`조합 <b>${sgn(c.own)}%p</b> · 뺏기 <b>${sgn(c.deny)}%p</b> · 응수 <b>${sgn(c.resp_delta,2)}%p</b>`
+    :`위협도 <b>${sgn(c.threat,2)}%p</b> · 응수 반영 <b>${sgn(c.resp_delta,2)}%p</b>`;
+  const resp=c.resp?`<div class="resp">상대 다음 ${c.resp.action==="ban"?"밴":"픽"} 예상 ${c.resp.top.map(r=>`<span class="r"><img src="${sq(r.cid)}" title="${esc(r.name)}">${pct(r.p,0)}</span>`).join("")}</div>`:"";
+  const chips=c.chips.length?`<div class="chips">${c.chips.map(([k,v])=>`<div class="chip"><span class="k ${esc(k)}">${esc(k)}</span><span>${esc(v)}</span></div>`).join("")}</div>`:"";
+  const tl=act==="pick"&&c.early!=null?`<div class="dl">이길 가치 ${sgn(c.wv)}%p (초반 ${sgn(c.early)} · 후반 ${sgn(c.late)})</div>`:"";
+  return `<div class="card"><div class="art"><img class="bg" alt="" src="${cen(c.cid)}" data-fb="${spl(c.cid)}|${ld(c.cid)}" onerror="fb(this)"><span class="rank">${i+1}순위</span>${c.tie?`<span class="tie">동점권</span>`:""}
+    <div class="hd"><div class="nm">${esc(c.name)}</div><div class="pct num">${pct(c.win)}</div></div></div>
+    <div class="bd"><div class="sub">${sub}</div><div class="seg">${seg}</div><div class="nums">${nums}</div>
+    <div class="dl">평소 대비 ${sgn(c.d,2)}%p (±${c.se.toFixed(2)}) · 앞보기 없이 ${sgn(c.d0,2)}</div>${tl}${resp}${chips}
+    <button class="btn gold go" data-cid="${c.cid}">이걸로 ${act==="ban"?"밴":"픽"}</button></div></div>`;
+}
+function renderPanel(){
+  const s=ST, P=$("#panel");
+  if(s.done){
+    P.innerHTML=`<h2><span class="t">${s.set}세트</span> 드래프트 끝</h2>
+      <div class="note">완성 조합 기준 T1 예상 승률 <b style="color:var(--gold);font-size:18px">${pct(s.win_now)}</b> (실력 차·진영만 ${pct(s.win_base)}). 세트 결과를 고르면 피어리스로 다음 세트를 시작합니다 (진 팀 선픽, 진영 바꿈 — 가정).</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn gold" data-win="${META.us}">T1 승 → 다음 세트</button><button class="btn" data-win="${esc(s.opp)}">${esc(s.opp)} 승 → 다음 세트</button><button class="btn" id="newBtn">새 경기</button></div>`;
+    P.querySelectorAll("[data-win]").forEach(b=>b.onclick=async()=>setState(await api("/api/next_set",{winner:b.dataset.win})));
+    $("#newBtn").onclick=openSetup;
+    return;
+  }
+  if(!s.us_turn){
+    const what=s.action==="ban"?"밴":"픽";
+    P.innerHTML=`<h2>${esc(s.team)} <span class="t">${what}</span> — 상대 예측</h2>
+      <div class="note">M4 (고정 모델, 리허설 보정 확률). ${$("#autoOpp").checked?"자동 진행: 1순위를 고릅니다. 다른 걸 고르려면 위 '상대 자동 진행'을 끄세요.":"실제 선택을 아래 목록이나 오른쪽 챔피언 판에서 고르세요."}</div>
+      <div class="pred">${s.pred.map(p=>`<div class="pr" data-cid="${p.cid}"><img src="${sq(p.cid)}"><div style="width:120px">${esc(p.name)}${p.role?` <span class="dl">${META.pos_ko[p.role]}</span>`:""}</div><div class="pb"><i style="width:${Math.min(100,p.p*100/ (s.pred[0].p||1)).toFixed(0)}%"></i></div><div class="p num">${pct(p.p,0)}</div></div>`).join("")}</div>`;
+    P.querySelectorAll(".pr").forEach(e=>e.onclick=()=>act(e.dataset.cid));
+    return;
+  }
+  const what=s.action==="ban"?"밴":"픽";
+  P.innerHTML=`<h2><span class="t">T1</span> ${what} 추천</h2><div class="spin">몬테카를로로 남은 드래프트를 굴리는 중 (후보마다 고른 직후 상태로 M4 다시 계산)…</div>`;
+  if(REC&&REC.step===s.step) drawRec();
+}
+function drawRec(){
+  const s=ST, r=REC, P=$("#panel"), kind=r.action;
+  const top=r.cards.slice(0,3), more=r.cards.slice(3);
+  const pairH=r.pairs&&r.pairs.length?`<div class="pairs"><h3>두 장 연속 추천 (${s.step}·${s.step+1}단계)</h3>${r.pairs.map(p=>`<div class="pair"><img src="${sq(p.a)}"><img src="${sq(p.b)}"><div><div>${esc(p.a_name)} <span class="dl">${p.a_role}</span> + ${esc(p.b_name)} <span class="dl">${p.b_role}</span></div><div class="c">${p.combo?esc(p.combo):"두 장 고른 뒤 상태로 굴림"} · 평소 대비 ${sgn(p.d,2)}%p</div></div><div class="w num">${pct(p.win)}</div><button class="btn gold" data-a="${p.a}" data-b="${p.b}">이 두 장</button></div>`).join("")}</div>`:"";
+  P.innerHTML=`<h2><span class="t">T1</span> ${kind==="ban"?"밴":"픽"} 추천 <span class="badge">${r.R.toLocaleString()}번 굴림 · ${r.secs}초</span></h2>
+    <div class="note">T1 이 평소대로 할 때 예상 승률 ${pct(r.base_win)} · 큰 숫자 = 이걸 고르고 남은 드래프트를 굴렸을 때 완성 조합 예상 승률${kind==="ban"?" · 밴은 상대 조합 가치를 낮춘 만큼만 셈":""}</div>
+    <div class="cards">${top.map((c,i)=>cardHTML(c,i,kind)).join("")}</div>
+    ${more.length?`<table class="more"><tr><th>순위</th><th>챔피언</th><th>예상 승률</th><th>평소 대비</th><th>${kind==="pick"?"포지션 · 선수":"상대 고를 확률"}</th></tr>${more.map((c,i)=>`<tr data-cid="${c.cid}"><td>${i+4}</td><td><img src="${sq(c.cid)}">${esc(c.name)}</td><td class="num">${pct(c.win)}</td><td class="num">${sgn(c.d,2)}%p</td><td>${kind==="pick"?esc(c.role_ko+" · "+(c.player||"")):pct(c.p_opp,0)}</td></tr>`).join("")}</table>`:""}
+    ${pairH}`;
+  P.querySelectorAll(".go,tr[data-cid]").forEach(b=>b.onclick=()=>act(b.dataset.cid));
+  P.querySelectorAll("[data-a]").forEach(b=>b.onclick=async()=>{await act(b.dataset.a,true);await act(b.dataset.b)});
+}
+
+// ---------------- 챔피언 판
+function renderGrid(){
+  const s=ST, gone=new Set([...s.steps.filter(x=>x.cid).map(x=>x.cid),...s.fearless]);
+  const q=$("#q").value.trim().toLowerCase();
+  const list=META.champs.filter(c=>(ROLE==="ALL"||c.roles.includes(ROLE))&&(!q||c.ko.includes(q)||c.id.toLowerCase().includes(q)));
+  $("#grid").innerHTML=list.map(c=>`<button class="cg ${gone.has(c.id)||s.done?"x":""}" data-cid="${c.id}" title="${esc(c.ko)}"><img loading="lazy" src="${sq(c.id)}" alt=""><span>${esc(c.ko)}</span></button>`).join("");
+  $("#grid").querySelectorAll(".cg").forEach(b=>b.onclick=()=>act(b.dataset.cid));
+}
+$("#q").oninput=renderGrid;
+
+// ---------------- 진행
+async function act(cid,noFollow){
+  if(busy) return; busy=true;
+  try{ const s=await api("/api/act",{cid}); toast(`${ST.step}단계 ${short(ST.team)} ${ST.action==="ban"?"밴":"픽"} → ${ko(cid)}`); setState(s,noFollow);}
+  catch(e){toast(e.message)} finally{busy=false}
+}
+$("#undoBtn").onclick=async()=>{clearTimeout(autoTimer);setState(await api("/api/undo",{}),false,true)};
+$("#autoOpp").onchange=()=>{if(ST&&!ST.done&&!ST.us_turn){renderPanel();follow()}};
+function setState(s,noFollow,manual){
+  ST=s; REC=(REC&&REC.step===s.step&&!manual)?REC:null; clearTimeout(autoTimer);
+  renderTop();renderBoard();renderPanel();renderGrid();
+  if(!noFollow) follow();
+}
+async function follow(){
+  const s=ST; if(s.done) return;
+  if(!s.us_turn){ if($("#autoOpp").checked) autoTimer=setTimeout(async()=>{ if(ST!==s) return; try{setState(await api("/api/auto",{}))}catch(e){toast(e.message)} },650); return;}
+  const step=s.step; try{ const r=await api("/api/rec"); if(ST.step===step&&ST===s){REC=r;drawRec()} }catch(e){toast(e.message)}
+}
+(async()=>{
+  META=await api("/api/meta");
+  $("#roles").innerHTML=[["ALL","전체"],...META.pos.map(p=>[p,META.pos_ko[p]])].map(([k,v])=>`<button data-r="${k}" class="${k===ROLE?"on":""}">${v}</button>`).join("");
+  $("#roles").querySelectorAll("button").forEach(b=>b.onclick=()=>{ROLE=b.dataset.r;$("#roles").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));renderGrid()});
+  const s=await api("/api/state");
+  if(s.empty) openSetup(); else setState(s);
+})();
+</script>
+</body>
+</html>
