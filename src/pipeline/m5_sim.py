@@ -48,6 +48,7 @@ import m4_v4 as V4  # noqa: E402
 import m4_v6 as V6  # noqa: E402
 import m4_v7 as V7  # noqa: E402
 import m4_validate as MV  # noqa: E402
+import m5_state as ST  # noqa: E402
 
 PROCESSED, log = H.PROCESSED, H.log
 OUT = PROCESSED / "m5"
@@ -77,13 +78,9 @@ class Sim:
         self.spec, self.pick_m, self.ban_m = MV.load_final()
         self.tau = self.fit_tau()   # V.Cum 을 바꾸기 전에 (보정은 원래 build_rows 그대로)
         self.calib = self.load_calib()
-        # 대회 누적 집계는 한 번만 (build_rows 가 매번 새로 만들지 않게)
-        cum = V.Cum()
-        for g in V.pro_games(cid):
-            if g["day"] < D:
-                cum.add(g)
-        self.cum = cum
-        V.Cum = lambda: cum
+        # 2026-11-08: 상태 입력 특징 계산 (m5_state) — 지금 상태에서 남은 단계 행을 한 번에 (유령 기록)
+        self.sb = ST.StateBuilder(self.a, self.pro_pick, self.lineup, self.sq, self.champs)
+        self._rows = {}
         self.wv = MM.win_value_table()   # 예전 이길 가치 (새 표가 없을 때만)
         f = OUT / "m5_value_champion.csv"  # m5_value.py: M1 조합 성격 근사 + 시간대 경로 나머지 (대회 %p)
         self.val = pd.read_csv(f).set_index("key") if f.exists() else None
@@ -106,35 +103,29 @@ class Sim:
         return p[p["gameid"] == last].set_index("role")["playername"].to_dict()
 
     # ------------------------------------------------------------ 가상 경기 → M4 행
+    def state_rows(self, gid, fp, lp, done):
+        """done = [(단계, 챔피언, 포지션)] (1 단계부터 이어짐) → 남은 단계 전부의 M4 행 {단계: 행} (m5_state 유령 기록, 한 번 계산)."""
+        key = (gid, tuple(done))
+        if key not in self._rows:
+            used = {c for _, c, _ in done}
+            filler = next(c for c in self.champs if c not in used)
+            dmap = {st: (c, ro) for st, c, ro in done}
+            rpg = f"SIM_{gid}"
+            recs = []
+            for st in range(1, 21):
+                ac, po, _ = V6.ORDER[st - 1]
+                c, ro = dmap.get(st, (filler, None))
+                recs.append({"GameId": gid, "MatchId": gid, "N_GameInMatch": 1, "RiotPlatformGameId": rpg, "day": D,
+                             "date_kst": D + " 17:00", "Patch": "26.16", "step": st, "action": ac, "pick_order": po,
+                             "team": fp if po == "fp" else lp, "opponent": lp if po == "fp" else fp, "cid": c, "role": ro,
+                             "league": "LCK", "fearless": True, "is_winner": np.nan, "ghost": st not in dmap})
+            rows = self.sb.build(pd.DataFrame(recs))
+            self._rows = {key: {r[5]: r for r in rows}}
+        return self._rows[key]
+
     def row_at(self, gid, fp, lp, done, target):
-        """done = [(step, cid, role)], target = 점수를 낼 단계 번호. 그 단계 앞의 안 일어난 단계는 건너뜀."""
-        recs = []
-        used = {c for _, c, _ in done}
-        filler = [c for c in self.champs if c not in used]
-        for st, c, ro in done:
-            act, po, _ = V6.ORDER[st - 1]
-            recs.append((st, act, po, c, ro))
-        act, po, _ = V6.ORDER[target - 1]
-        recs.append((target, act, po, filler[0], None))
-        k = 1
-        while len(recs) < 20:
-            recs.append((100 + k, "ban", "fp", filler[k], None))
-            k += 1
-        rpg = f"SIM_{gid}"
-        df = pd.DataFrame([{"GameId": gid, "MatchId": gid, "N_GameInMatch": 1, "RiotPlatformGameId": rpg, "day": D,
-                            "date_kst": D + " 17:00", "Patch": "26.16", "step": st, "action": ac, "pick_order": po,
-                            "team": fp if po == "fp" else lp, "opponent": lp if po == "fp" else fp, "cid": c, "role": ro,
-                            "league": "LCK", "fearless": True, "is_winner": np.nan} for st, ac, po, c, ro in recs])
-        a = pd.concat([self.a, df], ignore_index=True)
-        rows = V.build_rows(a, [gid], {D: self.ds}, {D: self.ex}, self.lineup, self.champs, [], {}, None)
-        rows = [list(r) for r in rows if r[5] == target]
-        rows = V6.c2_feature(rows, a)
-        gm = pd.concat([self.gm, pd.DataFrame([{"gameid": rpg, "league": "LCK", "day": D, "patch": self.lck_patch}])], ignore_index=True)
-        rows = V4.p1_features(rows, a, self.ev_all, gm, self.buff, five_only=True)
-        for r in rows:
-            r.append("LCK")
-        rows = V7.series_features(rows, a, self.wins)
-        return rows[0]
+        """target 단계의 M4 행 (지금 상태 done 에서). 사이 단계는 아직 안 일어난 것으로 봄."""
+        return self.state_rows(gid, fp, lp, done)[target]
 
     def set_lineup(self, gid, fp, lp):
         rpg = f"SIM_{gid}"
@@ -145,6 +136,7 @@ class Sim:
         s = pd.Series(add)
         s.index.names = self.lineup.index.names
         self.lineup = pd.concat([self.lineup, s])
+        self.sb.lineup = self.lineup
 
     # ------------------------------------------------------------ 점수 · 확률
     def raw_scores(self, row):
@@ -322,14 +314,10 @@ class Sim:
 
     # ------------------------------------------------------------ 몬테카를로 + 조합 단위 승률 (2026-11-08)
     def mc_setup(self):
-        """챔피언 순서 고정 배열: 포지션 비중(5칸), 포지션 가능(비중 0.1 이상), 이길 가치(대회 %p, 포지션별)."""
+        """챔피언 순서 고정 배열: 포지션 비중·가능 (m5_state.role_arrays), 이길 가치(대회 %p, 포지션별)."""
         self.cl = list(self.champs)
         self.ci_ = {c: i for i, c in enumerate(self.cl)}
-        sh = np.array([[self.ds.role_share[r].get(c, 0) for r in POS] for c in self.cl], float)
-        tot = sh.sum(1, keepdims=True)
-        self.share = np.divide(sh, tot, out=np.zeros_like(sh), where=tot > 0)
-        self.role_ok = (self.share >= 0.1).astype(float)
-        self.role_any = (self.share > 0).astype(float)
+        self.share, self.role_ok, self.role_any = ST.role_arrays(self.ds, self.cl)
         self.VAL = np.array([[self.wv_pp(c, r) for r in POS] for c in self.cl], float)
 
     def future_probs(self, gid, fp, lp, done, step, p_now):
@@ -346,11 +334,9 @@ class Sim:
         return out
 
     def mc_eval(self, fp, lp, done, step, actions, FP, R, seed=0):
-        """actions = 이번 T1 단계에서 해 볼 챔피언 (None = T1 평소 확률로 뽑음). 남은 드래프트를 R 번 굴려
+        """actions = 이번 T1 단계에서 해 볼 챔피언 (None = T1 평소 확률로 뽑음). 남은 드래프트를 R 번 굴려 (m5_state.rollout)
         완성 조합 승률 = σ((T1 이길 가치 합 − 상대 합) / 25) 의 평균. 같은 난수를 모든 후보에 씀 (공통 난수 → 후보 간 차이가 덜 흔들림)."""
-        rng = np.random.default_rng(seed)
-        U = rng.random((R, 21))
-        n, ar = len(self.cl), np.arange(R)
+        n = len(self.cl)
         opp = lp if US == fp else fp
         taken0 = np.zeros(n, bool)
         open0 = {fp: np.ones(5, bool), lp: np.ones(5, bool)}
@@ -362,45 +348,13 @@ class Sim:
                 t = fp if V6.ORDER[st - 1][1] == "fp" else lp
                 open0[t][POS.index(ro)] = False
                 val0[t] += self.VAL[self.ci_[c], POS.index(ro)] if c in self.ci_ else 0.0
+        opp_steps = [s for s in range(step, 21) if V6.ORDER[s - 1][0] == "pick" and (fp if V6.ORDER[s - 1][1] == "fp" else lp) == opp]
         out = {}
         for a in actions:
-            avail = np.tile(~taken0, (R, 1))
-            op = {t: np.tile(open0[t], (R, 1)) for t in (fp, lp)}
-            val = {t: np.full(R, val0[t]) for t in (fp, lp)}
-            got = np.zeros(n)          # 상대가 남은 픽에서 고른 횟수
-            start = step
-            if a is not None:
-                j = self.ci_[a]
-                avail[:, j] = False
-                if V6.ORDER[step - 1][0] == "pick":
-                    k = int(np.argmax(np.where(open0[US], self.share[j] + 1e-9, -1)))
-                    op[US][:, k] = False
-                    val[US] += self.VAL[j, k]
-                start = step + 1
-            for s in range(start, 21):
-                act, po, _ = V6.ORDER[s - 1]
-                t = fp if po == "fp" else lp
-                w = FP[s][None, :] * avail
-                if act == "pick":
-                    ok = (op[t].astype(float) @ self.role_ok.T) > 0
-                    w2 = w * ok
-                    bad = w2.sum(1) == 0      # 확률 있는 후보가 빈 포지션에 없음 → 빈 포지션에 나온 적 있는 챔피언 아무거나
-                    if bad.any():
-                        w2[bad] = avail[bad] * ((op[t][bad].astype(float) @ self.role_any.T) > 0) + 1e-12 * avail[bad]
-                    w = w2
-                else:
-                    w = np.where(w.sum(1, keepdims=True) > 0, w, avail.astype(float))
-                cs = np.cumsum(w, 1)
-                idx = np.minimum((cs < U[:, s:s + 1] * cs[:, -1:]).sum(1), n - 1)
-                avail[ar, idx] = False
-                if act == "pick":
-                    ro = np.argmax(np.where(op[t], self.share[idx] + 1e-9, -1), 1)
-                    op[t][ar, ro] = False
-                    val[t] += self.VAL[idx, ro]
-                    if t == opp:
-                        np.add.at(got, idx, 1)
+            _, val, E = ST.rollout(FP, step, fp, lp, taken0, open0, self.share, self.role_ok, self.role_any, R, seed,
+                                   forced=None if a is None else self.ci_[a], VAL=self.VAL, val0=val0)
             wp = 1 / (1 + np.exp(-(val[US] - val[opp]) / 25.0))
-            out[a] = {"wp": 100 * wp.mean(), "arr": wp, "p_opp": got / R}
+            out[a] = {"wp": 100 * wp.mean(), "arr": wp, "p_opp": E[opp_steps].sum(0)}
         return out
 
     def mc_rank(self, gid, fp, lp, done, step, act, rec, p_us, R):

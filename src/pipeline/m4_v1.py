@@ -203,7 +203,9 @@ def build_rows(a, games, ds_cache, ex_cache, lineup, champs, pgames, weight_of, 
             op_open = [p for p in POS if p not in {ro for _, ro in picks[O]}]
             if r.action == "pick":
                 pick_no += 1
-                bucket = F.PICK_BUCKET[pick_no]
+                # 2026-11-08: 표준 순서(픽 7~12 · 17~20)면 단계 번호로 픽 차례를 정함 — 가상 상태(m5_state)에서 앞 단계가 빠져도 맞게. 실제 경기는 같은 값
+                pn = (r.step - 6 if r.step <= 12 else r.step - 10) if (7 <= r.step <= 12 or 17 <= r.step <= 20) else pick_no
+                bucket = F.PICK_BUCKET[pn]
                 players = [F._player(lineup, game, T, ro) for ro in my_open]
             else:
                 bucket = "b1" if r.step <= 6 else "b2"
@@ -271,12 +273,15 @@ def build_rows(a, games, ds_cache, ex_cache, lineup, champs, pgames, weight_of, 
             ctx = {"cands": avail, "own": list(picks[T]), "opp": list(picks[O]), "bans": list(banned), "D": D,
                    "fp": getattr(r, "pick_order", "") == "fp", "bucket": bucket, "my_open": my_open, "op_open": op_open, "opp_team": O}
             rows.append((sid, gid, r.action, np.array(ys, np.int8), np.array(Xs, np.float32), int(r.step), w, T, ctx))
+            sid += 1
+            g_ = getattr(r, "ghost", False)
+            if isinstance(g_, (bool, np.bool_)) and bool(g_):
+                continue      # 2026-11-08 가상 대상 단계 (m5_state): 점수만 내고 상태(이미 나간 챔피언·픽)에는 안 넣음
             used.add(r.cid)
             if r.action == "pick":
                 picks[T].append((r.cid, r.role if isinstance(r.role, str) else None))
             else:
                 banned.append(r.cid)
-            sid += 1
     return rows
 
 
