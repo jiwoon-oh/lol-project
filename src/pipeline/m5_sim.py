@@ -6,7 +6,14 @@
   - 상대 차례는 M4 1순위 예측을 '실제 선택'으로 가정 (--given 으로 직접 넣을 수 있음)
   - T1 차례는 아래 추천 점수 1순위를 고른다고 가정
 
-추천 점수 (시험용, 가중치는 임시 — M5 에서 리허설로 정해야 함)
+추천 (2026-11-08 기본 = 몬테카를로 + 조합 단위 승률, --mc 0 이면 아래 예전 점수)
+  후보 행동마다 남은 드래프트를 --mc 번(기본 2000) 굴림: 남은 단계는 지금 상태에서 만든 M4 확률(상대 = 상대 예측, T1 = 평소 습관)로
+  이미 나간 챔피언 빼고 · 빈 포지션만 뽑음 (중복 없이 → 예전 '독립 합' 부풀림 없음). 사이 단계의 가상 선택은 M4 특징에 반영 못 함
+  완성 조합 승률 = σ((T1 이길 가치 합 − 상대 합) / 25), 팀 실력 차 0 가정. 같은 난수를 모든 후보에 씀 → 평소 대비 차이와 표준오차
+  뺏기·밴 효과는 굴리기 안에서 저절로 계산 (상대가 그 챔피언을 못 가져감). T1 이 남은 자리를 평소 습관으로 채운다는 가정이라
+  "지금 이 포지션을 채워 두면 나중에 습관 픽(값이 낮은)을 피함" 효과도 들어감
+
+예전 점수 (--mc 0, 시험용, 가중치는 임시)
   밴 = P(상대가 이번 페이즈 남은 픽에서 c 를 고름) × (기본 2%p + max(이길 가치, 0))
   픽 = 이길 가치(m5_value.py: M1 조합 성격 근사 + 시간대 경로 나머지, 대회 %p. 없으면 예전 M1·M2 챔피언 단독) + 뺏기(P(상대 다음 픽 c) × (2%p + 이길 가치))
   맞라인 상성(M2 15분 골드 → %p)은 **점수에 안 넣고 근거 칸에만** (2026-11-08 m5_counter 리허설: 승패 예측에 더하면 대회 로그 손실 0.6552 → 0.6613)
@@ -90,6 +97,7 @@ class Sim:
         self.lck_patch = self.gm[self.gm["league"] == "LCK"].sort_values("day")["patch"].iloc[-1]
         ko = json.loads((H.ROOT / "dashboard" / "career" / "champ_ko.json").read_text(encoding="utf-8"))["names"]
         self.ko = lambda c: ko.get(c, c)
+        self.mc = 0   # 몬테카를로 굴리기 횟수 (0 = 예전 점수)
 
     # ------------------------------------------------------------ 라인업 (08-25 이전 마지막 LCK 경기)
     def team_lineup(self, team):
@@ -229,6 +237,8 @@ class Sim:
     # ------------------------------------------------------------ 한 판 진행
     def play(self, opp, opp_first=True, given=None):
         given = given or {}
+        if self.mc and not hasattr(self, "VAL"):
+            self.mc_setup()
         fp, lp = (opp, US) if opp_first else (US, opp)
         gid = f"SIM/{US}_vs_{opp}"
         self.set_lineup(gid, fp, lp)
@@ -246,6 +256,8 @@ class Sim:
             entry = {"step": step, "team": team, "action": act}
             if team == US:
                 rec = self.recommend(gid, fp, lp, done, step, act, other, open_, picks, p_self)
+                if self.mc:
+                    rec = self.mc_rank(gid, fp, lp, done, step, act, rec, p_self, self.mc)
                 choice = given.get(step, rec.iloc[0]["cid"])
                 entry["rec"] = rec
             else:
@@ -306,7 +318,109 @@ class Sim:
                 rows.append({"cid": c, "name": self.ko(c), "role": ROLE_KO.get(ro, ""), "score": w + deny,   # 상성은 점수에 안 넣음 (근거 칸만, m5_counter 리허설: 승패에 더하면 대회 예측이 나빠짐)
                              "wv": w, "counter": cnt, "vs": vs, "deny": deny, "p_opp_next": p_next.get(c, 0.0),
                              "p_us_habit": p_us[c], "early": early, "late": late, "lo": lo, "hi": hi})
-        return pd.DataFrame(rows).sort_values("score", ascending=False).head(8).reset_index(drop=True)
+        return pd.DataFrame(rows).sort_values("score", ascending=False).reset_index(drop=True)
+
+    # ------------------------------------------------------------ 몬테카를로 + 조합 단위 승률 (2026-11-08)
+    def mc_setup(self):
+        """챔피언 순서 고정 배열: 포지션 비중(5칸), 포지션 가능(비중 0.1 이상), 이길 가치(대회 %p, 포지션별)."""
+        self.cl = list(self.champs)
+        self.ci_ = {c: i for i, c in enumerate(self.cl)}
+        sh = np.array([[self.ds.role_share[r].get(c, 0) for r in POS] for c in self.cl], float)
+        tot = sh.sum(1, keepdims=True)
+        self.share = np.divide(sh, tot, out=np.zeros_like(sh), where=tot > 0)
+        self.role_ok = (self.share >= 0.1).astype(float)
+        self.role_any = (self.share > 0).astype(float)
+        self.VAL = np.array([[self.wv_pp(c, r) for r in POS] for c in self.cl], float)
+
+    def future_probs(self, gid, fp, lp, done, step, p_now):
+        """지금 상태에서 남은 단계마다 M4 확률 (벡터). 사이 단계의 가상 선택은 특징에 반영 못 함
+        → 표본을 뽑을 때 '이미 나간 챔피언 제외 + 빈 포지션만'으로 맞춤."""
+        out = {}
+        for s in range(step, 21):
+            ps = p_now if s == step else self.probs(self.row_at(gid, fp, lp, done, s))
+            v = np.zeros(len(self.cl))
+            for c, p in ps.items():
+                if c in self.ci_:
+                    v[self.ci_[c]] = p
+            out[s] = v
+        return out
+
+    def mc_eval(self, fp, lp, done, step, actions, FP, R, seed=0):
+        """actions = 이번 T1 단계에서 해 볼 챔피언 (None = T1 평소 확률로 뽑음). 남은 드래프트를 R 번 굴려
+        완성 조합 승률 = σ((T1 이길 가치 합 − 상대 합) / 25) 의 평균. 같은 난수를 모든 후보에 씀 (공통 난수 → 후보 간 차이가 덜 흔들림)."""
+        rng = np.random.default_rng(seed)
+        U = rng.random((R, 21))
+        n, ar = len(self.cl), np.arange(R)
+        opp = lp if US == fp else fp
+        taken0 = np.zeros(n, bool)
+        open0 = {fp: np.ones(5, bool), lp: np.ones(5, bool)}
+        val0 = {fp: 0.0, lp: 0.0}
+        for st, c, ro in done:
+            if c in self.ci_:
+                taken0[self.ci_[c]] = True
+            if ro:
+                t = fp if V6.ORDER[st - 1][1] == "fp" else lp
+                open0[t][POS.index(ro)] = False
+                val0[t] += self.VAL[self.ci_[c], POS.index(ro)] if c in self.ci_ else 0.0
+        out = {}
+        for a in actions:
+            avail = np.tile(~taken0, (R, 1))
+            op = {t: np.tile(open0[t], (R, 1)) for t in (fp, lp)}
+            val = {t: np.full(R, val0[t]) for t in (fp, lp)}
+            got = np.zeros(n)          # 상대가 남은 픽에서 고른 횟수
+            start = step
+            if a is not None:
+                j = self.ci_[a]
+                avail[:, j] = False
+                if V6.ORDER[step - 1][0] == "pick":
+                    k = int(np.argmax(np.where(open0[US], self.share[j] + 1e-9, -1)))
+                    op[US][:, k] = False
+                    val[US] += self.VAL[j, k]
+                start = step + 1
+            for s in range(start, 21):
+                act, po, _ = V6.ORDER[s - 1]
+                t = fp if po == "fp" else lp
+                w = FP[s][None, :] * avail
+                if act == "pick":
+                    ok = (op[t].astype(float) @ self.role_ok.T) > 0
+                    w2 = w * ok
+                    bad = w2.sum(1) == 0      # 확률 있는 후보가 빈 포지션에 없음 → 빈 포지션에 나온 적 있는 챔피언 아무거나
+                    if bad.any():
+                        w2[bad] = avail[bad] * ((op[t][bad].astype(float) @ self.role_any.T) > 0) + 1e-12 * avail[bad]
+                    w = w2
+                else:
+                    w = np.where(w.sum(1, keepdims=True) > 0, w, avail.astype(float))
+                cs = np.cumsum(w, 1)
+                idx = np.minimum((cs < U[:, s:s + 1] * cs[:, -1:]).sum(1), n - 1)
+                avail[ar, idx] = False
+                if act == "pick":
+                    ro = np.argmax(np.where(op[t], self.share[idx] + 1e-9, -1), 1)
+                    op[t][ar, ro] = False
+                    val[t] += self.VAL[idx, ro]
+                    if t == opp:
+                        np.add.at(got, idx, 1)
+            wp = 1 / (1 + np.exp(-(val[US] - val[opp]) / 25.0))
+            out[a] = {"wp": 100 * wp.mean(), "arr": wp, "p_opp": got / R}
+        return out
+
+    def mc_rank(self, gid, fp, lp, done, step, act, rec, p_us, R):
+        FP = self.future_probs(gid, fp, lp, done, step, p_us)
+        if act == "ban":
+            cand = list(dict.fromkeys(list(rec["cid"].head(12)) + sorted(p_us, key=lambda c: -p_us[c])[:3]))
+        else:
+            cand = list(rec["cid"])
+        cand = [c for c in cand if c in self.ci_]
+        res = self.mc_eval(fp, lp, done, step, [None] + cand, FP, R)
+        base = res.pop(None)
+        rec = rec[rec["cid"].isin(cand)].copy()
+        rec["old_rank"] = np.arange(1, len(rec) + 1)
+        rec["mc_wp"] = rec["cid"].map(lambda c: res[c]["wp"])
+        rec["mc_d"] = rec["mc_wp"] - base["wp"]
+        rec["mc_se"] = rec["cid"].map(lambda c: 100 * np.std(res[c]["arr"] - base["arr"]) / np.sqrt(R))   # 평소 대비 차이의 표준오차 (같은 난수로 짝)
+        rec["p_opp_mc"] = rec["cid"].map(lambda c: base["p_opp"][self.ci_[c]])
+        out = rec.sort_values("mc_wp", ascending=False).reset_index(drop=True)
+        out.attrs["mc_base"] = base["wp"]
+        return out
 
 
 def report(sim, opp, fp, lp, lg):
@@ -321,7 +435,24 @@ def report(sim, opp, fp, lp, lg):
         if e["team"] == US:
             L.append(f"### {e['step']}단계 · {ph} · **{US} {what} 추천** → 선택 {ch}")
             r = e["rec"]
-            if e["action"] == "ban":
+            if "mc_wp" in r:
+                L.append(f"- 몬테카를로 {sim.mc}번: T1 이 평소대로 할 때 완성 조합 예상 승률 {r.attrs.get('mc_base', np.nan):.1f}% "
+                         "(팀 실력 차 0 가정, 이길 가치 합만)")
+                if e["action"] == "ban":
+                    L += ["| 순위 | 챔피언 | 예상 승률 % | 평소 대비 %p (± 표준오차) | 상대가 남은 픽(2페이즈 포함)에서 고를 확률 (굴리기) · 이번 페이즈 예전 독립 합 "
+                          "| T1 평소 밴 확률 | 예전 점수 순위 |", "|---|---|---|---|---|---|---|"]
+                    for i, x in r.head(6).iterrows():
+                        L.append(f"| {i + 1} | {x['name']} | {x['mc_wp']:.1f} | {x['mc_d']:+.2f} (±{x['mc_se']:.2f}) | {x['p_opp_mc']:.0%} · {x['p_opp']:.0%} "
+                                 f"| {x['p_us_habit']:.0%} | {x['old_rank']} |")
+                else:
+                    L += ["| 순위 | 챔피언 | 포지션 | 예상 승률 % | 평소 대비 %p (± 표준오차) | 이길 가치 [95% 구간] (초반 · 후반) | 맞라인 상성 (근거) "
+                          "| 상대 다음 픽 확률 | T1 평소 고를 확률 | 예전 점수 순위 |", "|---|---|---|---|---|---|---|---|---|---|"]
+                    for i, x in r.head(6).iterrows():
+                        vs = f"{x['counter']:+.1f} (vs {x['vs']})" if x["vs"] else "—"
+                        tm = f" [{x['lo']:+.1f}, {x['hi']:+.1f}] ({x['early']:+.1f} · {x['late']:+.1f})" if pd.notna(x.get("early")) else ""
+                        L.append(f"| {i + 1} | {x['name']} | {x['role']} | {x['mc_wp']:.1f} | {x['mc_d']:+.2f} (±{x['mc_se']:.2f}) | {x['wv']:+.1f}{tm} | {vs} "
+                                 f"| {x['p_opp_next']:.0%} | {x['p_us_habit']:.0%} | {x['old_rank']} |")
+            elif e["action"] == "ban":
                 L += ["| 순위 | 챔피언 | 점수 | 상대가 남은 픽에서 고를 확률 | 상대 기준 이길 가치 %p | T1 평소 밴 확률 |", "|---|---|---|---|---|---|"]
                 for i, x in r.head(5).iterrows():
                     L.append(f"| {i + 1} | {x['name']} | {x['score']:.2f} | {x['p_opp']:.0%} | {x['wv_opp']:+.1f} | {x['p_us_habit']:.0%} |")
@@ -343,9 +474,12 @@ def main():
     ap.add_argument("--opp", action="append", required=True)
     ap.add_argument("--opp-first", action="store_true")
     ap.add_argument("--given", default="")
+    ap.add_argument("--mc", type=int, default=2000, help="몬테카를로 굴리기 횟수. 0 = 예전 점수 (상대 확률 독립 합 + 뺏기 가산)")
+    ap.add_argument("--out", default="m5_sim.md")
     args = ap.parse_args()
     given = {int(k): v for k, v in (x.split(":") for x in args.given.split(",") if x)}
     sim = Sim()
+    sim.mc = args.mc
     OUT.mkdir(exist_ok=True)
     if sim.calib:
         cal = " · ".join(f"{ph} τ {c['tau']:.2f} ε {c['eps']}" for ph, c in sim.calib.items())
@@ -356,8 +490,8 @@ def main():
     for opp in args.opp:
         fp, lp, lg = sim.play(opp, args.opp_first, given)
         parts.append(report(sim, opp, fp, lp, lg))
-    (OUT / "m5_sim.md").write_text("\n".join(parts), encoding="utf-8")
-    log.info("→ %s", OUT / "m5_sim.md")
+    (OUT / args.out).write_text("\n".join(parts), encoding="utf-8")
+    log.info("→ %s", OUT / args.out)
 
 
 if __name__ == "__main__":
