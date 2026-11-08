@@ -11,7 +11,7 @@
 | 에이전트가 **끝날 때마다** | `python runctl.py usage --stage S4 --player <선수> --agent <agent_NN> --tokens <n> --seconds <s>` |
 | 단계 사이 | `python runctl.py status` — 선수별 다음 할 일, `research/logs/run_state.json` 저장 |
 
-- 상한은 `research/config/budget.yaml`의 `run.token_cap` (지금 2,000만, 멈춤 기준 90% = 1,800만). 구독에 남은 양은 코드가 알 수 없어서 **직접 정한 상한**으로 멈춤
+- 상한은 `research/config/budget.yaml`의 `run.token_cap` (지금 3,300만, 멈춤 기준 90% = 2,970만. 1,500만 → 2,000만 → 3,300만 사용자 결정). 구독에 남은 양은 코드가 알 수 없어서 **직접 정한 상한**으로 멈춤
 - 에이전트를 한꺼번에 많이 띄우면 한도에 닿았을 때 진행 중인 몫이 같이 날아감 → S4는 **도란 먼저**, 그다음 오너·페이커 병렬
 
 ## 2. 두 가지 "떨어짐"

@@ -861,6 +861,7 @@ def main():
     global ULT
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", choices=["full", "folds", "asof", "all"], default="all")
+    ap.add_argument("--patches", default="26.14,26.15", help="asof 를 만들 LCK 패치 (쉼표). 2026-11-08: M5 리허설 확대로 26.08·26.09·26.10 추가")
     a = ap.parse_args()
     raw = pd.read_csv(H.PARTS, dtype={"patch": str, "game_version": str, "matchId": str, "date_window": str})
     fr, bu, sg = timeline_rows()
@@ -914,7 +915,7 @@ def main():
             save(at_k, OUT / f"m0_attributes_fold{k}.csv")
     if a.only in ("asof", "all"):
         w = H.research_windows().set_index("patch")
-        for p in ("26.14", "26.15"):
+        for p in a.patches.split(","):
             cut = w.loc[p, "window_from"]
             sp = {c: q for c, q in split.items() if q < p}  # 그 시점에 아직 없던 변경은 나누지 않음
             at_p = build(df[df["day"] < cut], st, tp, bu, sp, f"asof_{p} (< {cut})")[0]
