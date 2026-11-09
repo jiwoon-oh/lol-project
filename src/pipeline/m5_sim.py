@@ -75,6 +75,10 @@ CAND_PICK = 15
 PHASE = lambda s: "1밴" if s <= 6 else ("1픽" if s <= 12 else ("2밴" if s <= 16 else "2픽"))  # noqa: E731
 K_DELTA = 0.32         # 숙련 편차(δ, %p) 반영 배율 — m5_skill 승패 시험의 패치별 k 평균
 BAN_R_MULT = 3         # 밴은 차이가 작아 굴리기를 더 많이
+# 2026-11-09 추천 쏠림: 픽 후보끼리 예상 승률 차이가 이길 가치 불확실성(구간 반폭 / 1.96) 합성 PICK_TIE_Z σ 안이면 동점권 → 동점권 안은 T1 평소 고를 확률 순
+# (m5_rec_diverse.py 학습 밖 비교. 0 이면 예전처럼 예상 승률 순)
+PICK_TIE_Z = 1.0
+SD_MED = 1.0           # 구간이 없는 챔피언의 σ (표의 중앙값으로 바뀜)
 MIN_HABIT = 0.03       # 픽 후보 = T1 이 이 상황에서 고를 확률 3% 이상 (최소 3개) — 안 쓰는 챔피언을 이길 가치만으로 올리지 않게
 
 
@@ -100,6 +104,9 @@ class Sim:
         self.wv = MM.win_value_table()   # 예전 이길 가치 (새 표가 없을 때만)
         f = OUT / "m5_value_champion.csv"  # m5_value.py: M1 조합 성격 근사 + 시간대 경로 나머지 (대회 %p)
         self.val = pd.read_csv(f).set_index("key") if f.exists() else None
+        global SD_MED
+        if self.val is not None and "lo" in self.val.columns:
+            SD_MED = float(((self.val["hi"] - self.val["lo"]) / 3.92).median())
         if self.val is None:
             log.warning("m5_value_champion.csv 없음 → 예전 이길 가치(win_value_table) 사용")
         lc = pd.read_csv(PROCESSED / "m2" / "m2_lane_counter.csv")
@@ -500,7 +507,14 @@ class Sim:
             out = rec.sort_values(["_k1", "_k2"], ascending=False).drop(columns=["_k1", "_k2"]).reset_index(drop=True)
         else:
             rec["skill_us"] = rec["cid"].map(lambda c: self.skill_of(US, c, self.role_for(c, open_[US])[0]))
-            out = rec.sort_values("mc_d", ascending=False).reset_index(drop=True)
+            sdv = ((rec["hi"] - rec["lo"]) / 3.92).fillna(SD_MED)
+            it = rec["mc_d"].idxmax()
+            rec["value_best"] = rec.index == it
+            rec["tie_sd"] = np.sqrt(sdv[it] ** 2 + sdv ** 2)
+            rec["tie"] = (rec.at[it, "mc_d"] - rec["mc_d"]) <= PICK_TIE_Z * rec["tie_sd"] if PICK_TIE_Z > 0 else rec["value_best"]
+            rec["_k1"] = np.where(rec["tie"], 1, 0)
+            rec["_k2"] = np.where(rec["tie"], rec["p_us_habit"], rec["mc_d"])
+            out = rec.sort_values(["_k1", "_k2"], ascending=False).drop(columns=["_k1", "_k2"]).reset_index(drop=True)
         out.attrs["mc_base"] = 100 * base1.mean()
         out.attrs["R"] = R
         return out

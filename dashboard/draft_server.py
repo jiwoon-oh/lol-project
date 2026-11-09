@@ -15,6 +15,8 @@ API
   POST /api/undo                     직전 T1 행동 전으로
   GET  /api/rec                      T1 차례 추천 (몇 초)
   POST /api/next_set {winner}        피어리스 다음 세트
+  GET  /api/replay_list              실제 경기 대조 목록 (m5_rec_check.py → replay.json)
+  GET  /api/replay?gid=...           실제 경기 하나 (드래프트 · 픽 차례별 그 시점 추천 · 실제 승패)
 """
 from __future__ import annotations
 
@@ -31,6 +33,31 @@ import m5_draft as MD  # noqa: E402
 
 LOCK = threading.Lock()
 D = None
+REPLAY_F = HERE.parent / "data" / "processed" / "2026" / "m5" / "rec_check" / "replay.json"
+_replay = {"mtime": None, "games": []}
+
+
+def replay_games():
+    """실제 경기 대조 자료 (src/pipeline/m5_rec_check.py 가 만듦). 세트마다 그 전 자료로만 만든 M4·이길 가치 → 학습 밖."""
+    if not REPLAY_F.exists():
+        raise ValueError("replay.json 없음 — python src/pipeline/m5_rec_check.py 를 먼저 돌리세요")
+    m = REPLAY_F.stat().st_mtime
+    if _replay["mtime"] != m:
+        _replay["games"] = json.loads(REPLAY_F.read_text(encoding="utf-8"))
+        _replay["mtime"] = m
+    return _replay["games"]
+
+
+def replay_list():
+    keys = ("gid", "set", "day", "n_game", "blue", "red", "fp", "winner", "p_elo_blue", "p_draft_blue", "miss")
+    return [{k: g[k] for k in keys} for g in replay_games()]
+
+
+def replay_one(gid):
+    for g in replay_games():
+        if g["gid"] == gid:
+            return g
+    raise ValueError(f"경기 없음: {gid}")
 
 
 def meta():
@@ -88,6 +115,12 @@ class H(BaseHTTPRequestHandler):
             return self._api(lambda: D.state() if D.opp else {"empty": True})
         if p == "/api/rec":
             return self._api(D.recommend)
+        if p == "/api/replay_list":
+            return self._api(replay_list)
+        if p == "/api/replay":
+            from urllib.parse import parse_qs, urlsplit
+            gid = parse_qs(urlsplit(self.path).query).get("gid", [""])[0]
+            return self._api(lambda: replay_one(gid))
         self._send(404, {"error": "not found"})
 
     def do_POST(self):

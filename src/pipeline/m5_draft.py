@@ -252,7 +252,8 @@ class Draft:
             if ac == "pick":
                 ro = sim.role_for(c, op[US])[0]
                 pl = sim.team_lineup(US).get(ro)
-                card.update(role=ro, role_ko=ROLE_KO.get(ro, ""), player=pl, own=float(sim.VALt[US][j, POS.index(ro)]) if ro else 0.0)
+                card.update(role=ro, role_ko=ROLE_KO.get(ro, ""), player=pl, own=float(sim.VALt[US][j, POS.index(ro)]) if ro else 0.0,
+                            tie=bool(x.get("tie", False)), value_best=bool(x.get("value_best", False)))
                 rk = self._pool_rank(pl, c)
                 if rk:
                     card["chips"].append(("주력", f"{pl}의 {rk}순위 챔피언"))
@@ -282,7 +283,9 @@ class Draft:
                     card["chips"].append(("상대 확률", f"상대가 남은 픽에서 고를 확률 {card['p_opp']:.0%}"))
             cards.append(card)
         out = {"step": step, "action": ac, "base_win": float(rec.attrs["mc_base"]) / 100, "R": int(rec.attrs.get("R", sim.mc)),
-               "cards": cards, "pairs": [], "secs": 0.0}
+               "cards": cards, "pairs": [], "secs": 0.0,
+               "n_tie": int(rec["tie"].sum()) if ac == "pick" and "tie" in rec else None,
+               "value_best": (sim.ko(rec.loc[rec["value_best"], "cid"].iloc[0]) if ac == "pick" and "value_best" in rec and rec["value_best"].any() else None)}
         if ac == "pick" and step + 1 <= 20 and self.team_of(step + 1) == US and V6.ORDER[step][0] == "pick":
             out["pairs"] = self._pairs([cd["cid"] for cd in cards[:6]], step, op, out["base_win"])
         out["secs"] = round(time.time() - t0, 1)
