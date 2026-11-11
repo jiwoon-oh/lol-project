@@ -37,10 +37,16 @@ T1 전력분석관 입장에서 **상대 팀이 무엇을 밴·픽할지 예측�
 | 딥리서치 | 프로필 68개 확정, 주장 10,497개, 인용 통과율 94.0%, 사람 표본 256건 주장 정확도 98.4% · 귀속 정확도 94.9% |
 | 결과물 | 실시간 밴픽 대시보드 (`dashboard/draft_server.py`), 선수·팀 스카우팅 리포트 (`dashboard/report.html`) |
 
+![상대 예측 적중률 — 플레이오프 55경기](docs/img/m4_topk.png)
+
 **알게 된 것 세 가지**
 1. **프로 픽은 "이기는 픽"보다 메타·숙련·상대 반응으로 설명됩니다.** 이길 가치를 M4에 넣어도 예측이 거의 안 늘었습니다. 그래서 "고를 확률"(예측)과 "이길 가치"(추천)를 나눴습니다.
 2. **챔피언 쌍의 상성·시너지는 승패로는 안 보이고 15분 골드로만 보입니다.** 조합 성격 모델(M1)의 비가산 몫도 대회 승패를 더 맞히지 못했습니다. 그래서 승률 계산에는 넣지 않고 추천 화면의 근거로만 보여 줍니다.
 3. **같은 시리즈 앞 세트 정보가 큽니다.** 2세트 이상 밴의 39.5%가 같은 팀이 앞 세트에 했던 밴입니다.
+
+**시험 결과 한눈에** — 무엇이 학습 밖 경기에서 효과가 있었고 무엇이 없었나
+
+![시험 결과 숲 그림](docs/img/tests_forest.png)
 
 ### 추천 시스템은 이렇게 작동합니다
 ```mermaid
@@ -92,6 +98,7 @@ flowchart TD
 5. [밴픽 대시보드](#5-밴픽-대시보드)
 6. [한계](#6-한계)
 7. [실행 · 폴더 · 자료 정책](#7-실행--폴더--자료-정책)
+8. [출처 · 라이선스](#8-출처--라이선스)
 
 ---
 
@@ -164,6 +171,42 @@ flowchart TD
 **목표**: "사람들이 이 선수·팀을 어떻게 보나"를 **출처 근거와 함께** 정리합니다. 기존 감성 사전·측면 사전으로 판정하지 않고, 출처를 직접 읽어 "주장 + 원문 인용 + 날짜 + 출처" 표를 만든 뒤 그 표로 프로필을 씁니다.
 
 전체 과정(단계별 입출력, 에이전트를 띄운 방식, 실행 기록, 수치)은 **[`docs/RESEARCH_PIPELINE.md`](docs/RESEARCH_PIPELINE.md)**, 규칙은 [`CLAUDE.md`](CLAUDE.md)에 있습니다. 여기는 요약만 둡니다.
+
+```mermaid
+flowchart TD
+  subgraph CODE1["코드 (토큰 0)"]
+    S1["S1 기사·인터뷰 찾기<br/>네이버 뉴스 API"]
+    S1b["S1-b 영어 매체 찾기<br/>사이트맵 순회"]
+    S2["S2 원문 저장<br/>robots.txt 확인 · 1~2초 간격"]
+    S3["S3 커뮤니티 표본<br/>인벤 · OP.GG · 유튜브 3종"]
+  end
+  subgraph LLM1["S4 주장 뽑기 (Claude 하위 에이전트)"]
+    P4["prepare: 12건 = 묶음<br/>묶음 8개 = 에이전트 1개 몫 파일"]
+    A4["에이전트 N개 (sonnet)<br/>bundle 1번 읽고 → out 1번 씀"]
+    C4["collect: 형식 검증<br/>v1 재사용 합치기 · patch 붙이기"]
+  end
+  S5["S5 인용 자동 확인 (코드)<br/>원문 대조 · 날짜 · 출처 · 이름 거리"]
+  subgraph LLM2["S6 프로필 초안 (Claude 하위 에이전트)"]
+    P6["prepare: 입력 파일 1개<br/>기록표 + 패치별 집계 + 주장 표 + 스타일 카드"]
+    A6["에이전트 1개 (대상당)<br/>초안 md 작성"]
+    K6["check: 근거 번호 · † · 등급 섞임 점검"]
+  end
+  S7["S7 사람 검토 (표본)<br/>엑셀로 채움 → merge → finalize"]
+  S8["S8 평가 (코드)<br/>통과율 · 정확도 · 비용"]
+  OUT["확정 프로필 68개<br/>research/profiles/{대상}.md"]
+
+  S1 --> S2
+  S1b --> S2
+  S2 --> P4
+  S3 --> P4
+  P4 --> A4 --> C4 --> S5 --> P6 --> A6 --> K6 --> S7 --> OUT
+  S7 --> S8
+  CTRL["실행 관리 runctl.py<br/>budget → 띄우기 → usage / backfill → status"]
+  CTRL -.-> A4
+  CTRL -.-> A6
+```
+
+LLM은 S4·S6 두 단계에만 쓰고, 찾기·저장·인용 검증·평가는 코드가 합니다. 에이전트는 입력 파일 하나를 읽고 결과 파일 하나를 쓰고 끝나며, 그 결과는 코드(S4 형식 · S5 인용 대조 · S6 점검)와 사람 표본(S7)이 확인합니다.
 
 | 단계 | 내용 | 누가 | 왜 이렇게 |
 |---|---|---|---|
@@ -321,6 +364,8 @@ flowchart TD
   - 리허설보다 3~5%p 낮지만 기준선과의 차이(+21~22%p)는 오히려 커졌습니다.
   - 강팀은 챔피언 폭이 넓어 어렵습니다(Gen.G 54.5%, 한화 57.6%). T1은 픽 62.2% · 밴 63.3%.
 
+  ![페이즈별 상위 5 적중](docs/img/m4_phase.png)
+
 ### M5 — 실시간 추천
 
 M5는 M4(고를 확률)와 이길 가치를 합쳐 "지금 무엇을 해야 하나"를 답합니다. 아래 단계를 차례로 쌓았습니다.
@@ -350,7 +395,13 @@ M5는 M4(고를 확률)와 이길 가치를 합쳐 "지금 무엇을 해야 하�
 
   - 26.14·26.15 두 패치만 보면 E-C가 최선이었지만, 5개 패치로 넓히니 M1이 시즌 초에 약해 이득이 사라졌습니다.
   - M1을 얼마나 믿을지(w)를 학습 기간 끝 15%로 맞추게 했더니 5개 패치 모두 0 근처(−0.43~0.22)였습니다. **시간대 경로 위에 M1이 더해 주는 게 없어서** M1을 뺐습니다. 두 패치로만 고르면 운이 섞인다는 걸 확인한 셈입니다.
+
+  ![이길 가치 방식 비교](docs/img/value_variants.png)
+
 - **최종 표** (`m5_value_champion.csv`): 08-25까지 전부로, 대회 배율 k 1.23. 구간은 경기 다시 뽑기 50회. 판수 200 이상 212개 챔피언 중 44개가 구간이 0을 안 걸칩니다. 예: 세나 원딜 +4.8%p, 렐 +4.4, 애쉬 +4.0 / 바루스 −4.4, 이즈리얼 −3.8.
+
+  ![챔피언 이길 가치 상위·하위 10](docs/img/champion_value.png)
+
 - **점검**: 시점별 R² — 챔피언 몫은 10분에 가장 크고 뒤로 갈수록 작아짐. K(끝난 경기 값)를 2~5로 바꿔도 결과 같음.
 
 #### M5 3단계 — 맞라인 상성을 속성으로 (`m5_counter.py`) — 채택 안 함
@@ -378,6 +429,8 @@ M5는 M4(고를 확률)와 이길 가치를 합쳐 "지금 무엇을 해야 하�
   | 로그 손실 | 0.0588 | **0.0555** |
   | 예측 합 ÷ 실제 개수 | 0.93 | **1.00** |
   | "70% 이상"이라 한 것의 실제 비율 | 42% | **67%** |
+
+  ![확률 보정 곡선 — 예전 방식 vs 굴리기](docs/img/calibration.png)
 
   | 단계 s 실제 선택의 로그 손실 (상태 t에서) | 다음 단계 | 7단계 이상 뒤 |
   |---|---|---|
@@ -409,6 +462,8 @@ M5는 M4(고를 확률)와 이길 가치를 합쳐 "지금 무엇을 해야 하�
   | ① 기울기 | 1.48 [0.75, 2.29] → 예상 승률이 부풀려지지 않음. 효과는 주로 "확실히 불리한 조합"(하위 25%: 기대 52.2% → 실제 36.8%) |
   | ② 놓친 몫 기울기 | **−0.70 [−1.35, −0.11]**, p 0.04 → 추천에서 더 벗어난 팀이 더 짐. 크기도 모델 눈금(−1)과 맞는 범위 |
   | 실제 픽 = 추천 1순위 / 상위 5 | 11.4% / 52.3% (평소 고를 확률 기준 26.9% / 66.6%) |
+
+  ![조합 가치 4분위별 기대 vs 실제 승률](docs/img/rec_check_quartiles.png)
 
 - **해석**: 추천 근거(이길 가치)는 학습 밖에서도 승패를 맞힙니다. 다만 관찰 자료라 인과 증명은 아니고(Elo·진영만 통제), 효과가 작고(p 0.04) 세트별로 흔들립니다(26.09·RTM은 도움 없음).
 - 같은 실행이 대시보드 **실제 경기 대조** 탭 자료(`replay.json`)를 만듭니다([5장](#5-밴픽-대시보드)).
@@ -499,6 +554,7 @@ python src/pipeline/m5_ban_check.py            # 밴 검증 (약 25분)
 python dashboard/draft_server.py --port 8770   # 밴픽 대시보드
 python src/research/runctl.py status           # 리서치 진행 상태
 python src/research/record_check.py            # 리서치 주장 ↔ 경기 기록 대조
+python src/pipeline/make_readme_figs.py        # README 그래프 7장 → docs/img/ (matplotlib 필요, 집계 숫자만)
 ```
 - M4 최종 검증(`m4_validate.py --run --once`)은 이미 한 번 돌렸습니다. 결과가 있으면 다시 돌아가지 않습니다.
 - 수집 단계별 실행법은 [`docs/PIPELINE.md`](docs/PIPELINE.md) 1장에 있습니다.
@@ -511,7 +567,7 @@ research/config/   리서치 대상·검색어·표본 수·지시문
 dashboard/         밴픽 대시보드(draft_server.py · draft.html), 스카우팅 리포트(build.py · template.html)
 docs/              PIPELINE.md (데이터 수집 + 모델 설계·실행 기록, 7-7장이 M0~M5 전 과정)
                    RESEARCH_PIPELINE.md (딥리서치 전 과정)
-                   decisions.md (날짜별 결정과 이유), runbook.md (중단·재개)
+                   decisions.md (날짜별 결정과 이유)
 CLAUDE.md          리서치 규칙 · 진행 상태 (문서 우선순위 1순위)
 HANDOFF.md         인수인계 (새 환경 준비·규칙·화면 두 가지·남은 일)
 ```
@@ -525,6 +581,31 @@ HANDOFF.md         인수인계 (새 환경 준비·규칙·화면 두 가지·�
 | 인수인계 (새 환경 준비, 규칙, 화면, 남은 일) | [`HANDOFF.md`](HANDOFF.md) |
 
 ### 자료 정책
-- 이 저장소에는 **코드, 설계 문서, 설정만** 있습니다.
-- 수집한 원문(기사 본문, 커뮤니티 글, 댓글, 인용)과 경기 자료(`data/`, `research/` 결과)는 개인 분석용이라 올리지 않습니다.
+- 이 저장소에는 **코드, 설계 문서, 설정만** 있습니다. 데이터는 다시 배포하지 않습니다.
+- 수집한 원문(기사 본문, 커뮤니티 글, 댓글, 인용)과 경기 자료(`data/`, `research/` 결과)는 개인 분석용이라 올리지 않습니다. 그래서 이 저장소만으로는 모델·대시보드를 바로 돌릴 수 없습니다.
+- 대시보드 화면 글꼴 파일은 재배포 조건을 확인하지 못해 넣지 않았습니다(없으면 시스템 글꼴로 표시).
 - API 키는 `.env`에만 둡니다.
+
+---
+
+## 8. 출처 · 라이선스
+
+### 데이터 출처
+| 자료 | 출처 | 비고 |
+|---|---|---|
+| 대회 경기 기록 (LCK · LCK CL · LPL · LEC · LCS) | [Oracle's Elixir](https://oracleselixir.com) — Tim Sevenhuysen | 2026 경기 데이터 CSV. 이용 조건은 원 출처를 따름 |
+| 드래프트 순서 · 로스터 · 일정 · 선수 커리어 | [Leaguepedia](https://lol.fandom.com) (Fandom) Cargo API | 위키 콘텐츠 라이선스(CC BY-SA)와 Fandom 이용 약관을 따름 |
+| 솔로랭크 경기 · 타임라인 | [Riot Games API](https://developer.riotgames.com) (match-v5 · league-v4 · account-v1) | 개발 키로 수집, 원자료는 공개하지 않음 |
+| 챔피언 정보 · 이름 · 그림 | Riot [Data Dragon](https://developer.riotgames.com/docs/lol#data-dragon), 패치노트(leagueoflegends.com) | 대시보드의 챔피언 그림은 브라우저가 Data Dragon에서 직접 불러옴 |
+| 챔피언 역할 분류 (속성표 검증용) | [Meraki Analytics](https://github.com/meraki-analytics) | 외부 기준으로만 사용 |
+| 프로 선수 솔랭 계정 | [Trackingthepros](https://www.trackingthepros.com) | 계정 연결용 |
+| 메타 점수 (경기일 × 챔피언) | 팀원 작업물 | M4 메타 변수로 사용 |
+| 여론 리서치 | 네이버 뉴스 검색 API, 영어 e스포츠 매체 사이트맵, 인벤, OP.GG 톡, 유튜브 댓글 | robots.txt 준수. 원문·인용은 공개하지 않고 집계만 사용 |
+
+### Riot Games 고지
+T1 Draft Analysis isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+
+이 프로젝트는 Riot Games의 보증을 받지 않았으며 Riot Games 또는 Riot Games 자산의 제작·관리에 공식적으로 관여하는 누구의 견해도 반영하지 않습니다. 팀 이름·로고와 선수 이름은 각 소유자의 것입니다.
+
+### 코드 라이선스
+코드는 [MIT License](LICENSE)입니다. 위 데이터와 그 결과물(원문, 경기 자료, 모델 결과)은 라이선스 대상이 아니며 각 출처의 조건을 따릅니다.

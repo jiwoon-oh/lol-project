@@ -23,6 +23,8 @@ dashboard/career/
 dashboard/report.html
 dashboard/index.html
 dashboard/player_sample_Doran.html
+# 글꼴: 재배포 조건을 확인하지 못해 공개 저장소에서 뺌 (로컬에만 둠, 없으면 시스템 글꼴)
+dashboard/fonts/
 
 # 파이썬·주피터
 __pycache__/

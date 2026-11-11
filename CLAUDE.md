@@ -3,7 +3,7 @@
 > 작성일: 2026-11-02 · 최종 정리: 2026-11-03 · **진행 상태 갱신: 2026-11-11** (리서치 S1~S8 완료, 밴픽 모델 M0~M5·밴픽 대시보드 완료, 모델 개발은 여기서 멈춤)
 > 목적: 코랩에서 진행한 수집·분석을 **로컬(Claude Code)** 로 옮기고, **사전 기준 없이 처음부터 프로필을 만드는 리서치 파이프라인**을 돌림. 도란·오너·페이커 파일럿 후 선수 58명 + 팀 10개로 확대 → **68개 프로필 확정 (2026-11-03)**
 > 최종 목표: T1 밴픽 전력분석 시스템. 이 문서 범위는 **선수·팀 여론·플레이스타일 리서치 규칙**. 밴픽 모델(M0~M5 완료)은 `docs/PIPELINE.md` 7장, 프로젝트 소개·결과는 `README.md`, **인수인계(새 환경 준비·화면·남은 일)는 `HANDOFF.md`**
-> 문서 우선순위: **이 파일(CLAUDE.md) > `docs/decisions.md` > `docs/runbook.md`**
+> 문서 우선순위: **이 파일(CLAUDE.md) > `docs/decisions.md`**
 
 ---
 
@@ -18,7 +18,7 @@
 | 기간 | **날짜로 자름 (패치 이름으로 자르지 않음)**. **리서치 = 2026-08-25까지** (정규시즌 마지막 경기 08-23 + 플레이오프 전 이틀), **2026-08-26(플레이오프 첫 경기) 이후 = 밴픽 모델 검증용** (리서치·기록표에 쓰지 않음). 리서치 기간에 해당하는 패치는 26.01~26.16 (26.01·02·03·06·07·08·09·10·11·14·15·16). 26.04·05(비시즌), 26.12·13(MSI) 기간은 LCK 경기가 없어 제외, 월즈(10-24~)는 검증 기간 밖이라 보지 않음 |
 | 패치 표기 | 패치는 **구간 이름표**로만 씀 (3. 폼 섹션을 나누는 단위, 주장의 `patch` 칸). 날짜 → 패치 대응은 `research/config/tournament_patches.csv` (`patch_windows.py`가 경기 기록으로 생성), 설정 `period.yaml`. 패치 칸은 문자열로 읽을 것 (숫자로 읽으면 26.10 → 26.1) |
 | 대상 | **선수 58명 + 팀 10개** (선수 = 리서치 기간 LCK 10경기 이상 + 주전, `build_roster.py` → `research/config/players.yaml`·`teams.yaml`, 별칭은 인벤 노트북 v8.8 ROSTER → `roster_aliases.json`). 선수 모두 같은 분량(최대 418건). 팀 프로필 = 밴픽 성향·팀 운영·자주 쓰는 조합(`team_stats.py` 기록 + 팀 여론, 지시문 `s6_team_prompt.md`). 파일럿은 도란·오너·페이커 |
-| 토큰 상한 | **3,300만** (`budget.yaml` run.token_cap, 90%인 2,970만에서 멈춤. 1,500만 → 2,000만 → 3,300만 사용자 결정). 떨어지면 `docs/runbook.md` 대로 이어하기 |
+| 토큰 상한 | **3,300만** (`budget.yaml` run.token_cap, 90%인 2,970만에서 멈춤. 1,500만 → 2,000만 → 3,300만 사용자 결정). 떨어지면 7-1 대로 이어하기 |
 | 밴픽 모델 대회 자료 | **LCK + LCK CL + LPL + LEC + LCS** (OE, 08-25까지, 다른 리그는 경기 기록의 패치 값). M1~M3 와 이길 가치에 씀. M4 최종 모델은 **픽 = LightGBM 5리그(LCK 가중 3), 밴 = 선형 LCK 만 + LightGBM 5리그** (처음 결정은 LCK 만, 2026-11-07 리허설로 바꿈). 설계·기록은 `docs/PIPELINE.md` 7-7 |
 | 사용 모델 | Claude Code 구독의 하위 에이전트 (`budget.yaml` s4.model = sonnet). 무료 모델은 쓰지 않음 |
 | 진행 상태 | 9장. 정확한 값은 항상 `python src/research/runctl.py status` |
@@ -163,7 +163,6 @@ lol-project/
 │
 └── docs/
     ├── decisions.md               주요 결정과 이유
-    ├── runbook.md                 중단·재개 절차
     ├── RESEARCH_PIPELINE.md       딥리서치 과정 전체 (단계별 입출력·에이전트 운영·실행 기록·수치)
     └── PIPELINE.md                밴픽 데이터 수집 + 모델 M0~M5 설계·실행 기록 (7-7장)
 ```
@@ -172,6 +171,7 @@ lol-project/
 - `.env` (키), `.claude/` (로컬 설정), `*.zip`
 - `data/`, `research/*` (단 `research/config/` 는 포함), `notebooks/`, `*.csv` · `*.csv.gz` · `*.pkl` · `*.jsonl` · `*.duckdb` · `*.parquet`
 - 대시보드 결과물 `dashboard/data.json` · `career/` · `report.html` · `index.html` · `player_sample_Doran.html` (프로필 인용이 들어 있음)
+- 글꼴 `dashboard/fonts/` (재배포 조건 미확인, 2026-11-11 추적에서 뺌 — 로컬에만)
 - 공개되는 것 = 코드 · 설계 문서 · `research/config/`
 
 ### `.env.example`
@@ -381,7 +381,9 @@ S8   평가                   코드                            토큰 0
 
 ## 7-1. 실행 중단·재개
 
-- 토큰(구독 사용량)이 떨어지거나 상한에 닿으면: **처음부터 다시 하지 않음**. 절차는 `docs/runbook.md`
+- 토큰(구독 사용량)이 떨어지거나 상한에 닿으면: **처음부터 다시 하지 않음**. 아래 절차 (예전 `docs/runbook.md`는 2026-11-11 이 절로 합침)
+- status 표시별 할 일: `S4 에이전트 다시 실행: agent_NN` → **그 에이전트만** 다시 띄움(같은 bundle·출력 경로) / `extract_claims.py collect` → collect (몇 번 해도 같음) / `verify_quotes.py` → S5 (토큰 0) / `build_profile.py prepare`·`S6 에이전트 실행` → S6 (초안 파일이 있으면 완료) / `완료 → S7` → 사람 검토
+- 토큰을 안 쓰는 단계가 끊기면: S1 은 처음부터(같은 결과), S2·OP.GG fetch 는 받은 것 건너뜀, OP.GG discover 는 `state.json` 다음부터, S3 는 같은 입력이면 같은 표본(단 S4 prepare 뒤에는 다시 돌리지 않음)
 - 하위 에이전트를 띄우기 전 `python src/research/runctl.py budget --next <예상>` (종료 코드 2면 멈추고 사용자에게 보고), 끝나면 `runctl.py usage ...` 로 기록. 상한은 `budget.yaml` `run.token_cap` (3,300만, 90%인 2,970만에서 멈춤)
 - 이어할 때는 `runctl.py status` 의 `next` 만 실행. **`extract_claims.py prepare` 를 다시 하지 않음**
 

@@ -550,7 +550,6 @@ python src/pipeline/m0_attributes.py --only full  # 전체만 (약 40초, 첫 �
 - **한타형 궁 = 사람 라벨** `research/config/ult_types.csv` (173명, 2026-11-06 사용자 확인; M0 재실행에도 덮어쓰지 않음, 초안은 `m0/m0_ult_types_draft.csv`) → 속성표 칸 `ult_type`(딜·광역 CC·단일 CC·자기 강화·아군 보호·이동·전역·상대 궁), `ult_label_aoe`(1/0), `ult_teamfight`(광역 CC 또는 범위 Y). 사일러스 = 상대 궁(빈칸, M1 에서 상대 궁으로)
 - 라벨 검증: 광역 CC 라벨 ↔ VANGUARD AUC **0.911** (툴팁 옛 축 0.686 → `ax_ult_fight_tooltip` 으로 이름 바꿔 참고만), 한타형 궁 0.706. 딜 라벨 행의 궁 딜 비중이 가장 높고(66) 광역 CC 라벨 행의 이니시가 가장 높음(65) → 라벨과 데이터가 맞음. 툴팁 규칙과 일치 78%
 - 축별 신뢰도 표 `m0/m0_reliability.csv` (반분·인접 패치·이름표 AUC·대회 일치). 낮음 = 캐치, 툴팁 한타형 궁. 스플릿 반분 0.76
-- 보고서: Claude Doc "M0 챔피언 속성표 보고서" (https://claude.ai/artifact/765yy6qzGFQJBhcvVRm2nL)
 
 #### M1 1차 실행 — `src/pipeline/m1_comp.py` (2026-11-06)
 
