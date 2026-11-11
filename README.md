@@ -510,10 +510,10 @@ src/research/      선수·팀 프로필 리서치 (S1~S8), record_check.py
 research/config/   리서치 대상·검색어·표본 수·지시문
 dashboard/         밴픽 대시보드(draft_server.py · draft.html), 스카우팅 리포트(build.py · template.html)
 docs/              PIPELINE.md (데이터 수집 + 모델 설계·실행 기록, 7-7장이 M0~M5 전 과정)
-                   RESEARCH_PIPELINE.md (딥리서치 전 과정), M5_HANDOFF.md (추천 설계·인수인계)
+                   RESEARCH_PIPELINE.md (딥리서치 전 과정)
                    decisions.md (날짜별 결정과 이유), runbook.md (중단·재개)
 CLAUDE.md          리서치 규칙 · 진행 상태 (문서 우선순위 1순위)
-HANDOFF.md         스카우팅 리포트 인수인계
+HANDOFF.md         인수인계 (새 환경 준비·규칙·화면 두 가지·남은 일)
 ```
 
 ### 더 자세한 문서
@@ -522,7 +522,7 @@ HANDOFF.md         스카우팅 리포트 인수인계
 | 모델마다 시험한 변형·수치 전부 | [`docs/PIPELINE.md`](docs/PIPELINE.md) 7-7장 |
 | 딥리서치 단계별 입출력·에이전트 운영 | [`docs/RESEARCH_PIPELINE.md`](docs/RESEARCH_PIPELINE.md) |
 | 왜 그렇게 정했나 (날짜순) | [`docs/decisions.md`](docs/decisions.md) |
-| 추천 시스템 설계와 남은 일 | [`docs/M5_HANDOFF.md`](docs/M5_HANDOFF.md) |
+| 인수인계 (새 환경 준비, 규칙, 화면, 남은 일) | [`HANDOFF.md`](HANDOFF.md) |
 
 ### 자료 정책
 - 이 저장소에는 **코드, 설계 문서, 설정만** 있습니다.

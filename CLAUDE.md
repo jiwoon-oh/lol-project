@@ -1,8 +1,8 @@
 # LCK 2026 선수·팀 프로필 리서치 — 인수인계 (v2)
 
-> 작성일: 2026-11-02 · 최종 정리: 2026-11-03 · **진행 상태 갱신: 2026-11-07** (리서치 S1~S8 완료, 밴픽 모델 M0~M4 완료, 문서 간 어긋난 수치 정리)
+> 작성일: 2026-11-02 · 최종 정리: 2026-11-03 · **진행 상태 갱신: 2026-11-11** (리서치 S1~S8 완료, 밴픽 모델 M0~M5·밴픽 대시보드 완료, 모델 개발은 여기서 멈춤)
 > 목적: 코랩에서 진행한 수집·분석을 **로컬(Claude Code)** 로 옮기고, **사전 기준 없이 처음부터 프로필을 만드는 리서치 파이프라인**을 돌림. 도란·오너·페이커 파일럿 후 선수 58명 + 팀 10개로 확대 → **68개 프로필 확정 (2026-11-03)**
-> 최종 목표: T1 밴픽 전력분석 시스템. 이 문서 범위는 **선수·팀 여론·플레이스타일 리서치**까지. 밴픽 모델(M0~M4 완료, M5 실시간 추천은 설계만)은 `docs/PIPELINE.md` 7장, M5 인수인계는 `docs/M5_HANDOFF.md`, 대시보드는 `HANDOFF.md`
+> 최종 목표: T1 밴픽 전력분석 시스템. 이 문서 범위는 **선수·팀 여론·플레이스타일 리서치 규칙**. 밴픽 모델(M0~M5 완료)은 `docs/PIPELINE.md` 7장, 프로젝트 소개·결과는 `README.md`, **인수인계(새 환경 준비·화면·남은 일)는 `HANDOFF.md`**
 > 문서 우선순위: **이 파일(CLAUDE.md) > `docs/decisions.md` > `docs/runbook.md`**
 
 ---
@@ -19,7 +19,7 @@
 | 패치 표기 | 패치는 **구간 이름표**로만 씀 (3. 폼 섹션을 나누는 단위, 주장의 `patch` 칸). 날짜 → 패치 대응은 `research/config/tournament_patches.csv` (`patch_windows.py`가 경기 기록으로 생성), 설정 `period.yaml`. 패치 칸은 문자열로 읽을 것 (숫자로 읽으면 26.10 → 26.1) |
 | 대상 | **선수 58명 + 팀 10개** (선수 = 리서치 기간 LCK 10경기 이상 + 주전, `build_roster.py` → `research/config/players.yaml`·`teams.yaml`, 별칭은 인벤 노트북 v8.8 ROSTER → `roster_aliases.json`). 선수 모두 같은 분량(최대 418건). 팀 프로필 = 밴픽 성향·팀 운영·자주 쓰는 조합(`team_stats.py` 기록 + 팀 여론, 지시문 `s6_team_prompt.md`). 파일럿은 도란·오너·페이커 |
 | 토큰 상한 | **3,300만** (`budget.yaml` run.token_cap, 90%인 2,970만에서 멈춤. 1,500만 → 2,000만 → 3,300만 사용자 결정). 떨어지면 `docs/runbook.md` 대로 이어하기 |
-| 밴픽 모델 대회 자료 | **LCK + LCK CL + LPL + LEC + LCS** (OE, 08-25까지, 다른 리그는 경기 기록의 패치 값). 조합 승패·시너지·카운터(M1~M3)에만 쓰고, **픽 선택 모델(M4)은 LCK만** 학습. 설계는 `docs/PIPELINE.md` 7-7 (2026-11-04 결정) |
+| 밴픽 모델 대회 자료 | **LCK + LCK CL + LPL + LEC + LCS** (OE, 08-25까지, 다른 리그는 경기 기록의 패치 값). M1~M3 와 이길 가치에 씀. M4 최종 모델은 **픽 = LightGBM 5리그(LCK 가중 3), 밴 = 선형 LCK 만 + LightGBM 5리그** (처음 결정은 LCK 만, 2026-11-07 리허설로 바꿈). 설계·기록은 `docs/PIPELINE.md` 7-7 |
 | 사용 모델 | Claude Code 구독의 하위 에이전트 (`budget.yaml` s4.model = sonnet). 무료 모델은 쓰지 않음 |
 | 진행 상태 | 9장. 정확한 값은 항상 `python src/research/runctl.py status` |
 
@@ -59,6 +59,8 @@
 
 ## 2. 지금까지 만든 것 (코랩)
 
+> 리서치는 끝났으므로 2·3장은 **처음부터 다시 수집할 때만** 필요합니다.
+
 | 노트북 | 최신 | 역할 | 이번 리서치에서 |
 |---|---|---|---|
 | `inven_lck_2026_v8_8.ipynb` | v8.8 | 인벤 수집(증분) + 사전 기반 분석 + 스타일 카드 | 인벤 원문 제공, **스타일 카드는 비교 대상**, ROSTER = 별칭 출처 |
@@ -72,7 +74,7 @@
 
 ---
 
-## 3. 드라이브에서 받을 것
+## 3. 드라이브에서 받을 것 (재수집할 때만)
 
 ### 3-1. 체크리스트
 
@@ -133,7 +135,7 @@ lol-project/
 │   ├── logs/                      usage.csv(토큰), run_state.json, s3_summary.csv, s5_summary.csv, 단계별 로그
 │   └── */_v1/                     v1 결과 보관 (삭제 안 함)
 │
-├── src/research/
+├── src/research/                 (아래 S1~S8)
 │   ├── common.py                  경로·설정·PoliteFetcher·RFC 9309 robots 해석기
 │   ├── build_roster.py            대상 선수·팀 명단
 │   ├── patch_windows.py           날짜 → 패치 대응표
@@ -149,61 +151,41 @@ lol-project/
 │   ├── runctl.py                  status / budget / usage
 │   └── evaluate.py                S8 평가 + S7 검토 틀(template)
 │
-├── src/pipeline/                  밴픽 자료 수집(a~i)·모델(m0~m4) — `docs/PIPELINE.md`
-├── dashboard/                     T1 스카우팅 대시보드 (build.py → report.html) — `HANDOFF.md`
-├── HANDOFF.md                     대시보드 인수인계
-├── README.md                      프로젝트 전체 소개
+├── src/research/record_check.py   리서치 주장 ↔ 경기 기록 대조 (2026-11-08)
+├── src/pipeline/                  밴픽 자료 수집(a~i)·모델(m0~m4)·추천(m5_*) — `docs/PIPELINE.md`
+│   ├── m5_state.py · m5_sim.py    상태 입력 특징·굴리기 / 추천 계산
+│   ├── m5_calibrate · m5_value(_w) · m5_skill   확률 보정 · 이길 가치 · 숙련 편차
+│   ├── m5_replay · m5_rec_check · m5_ban_check · m5_rec_diverse · m5_ctx · m5_counter   검증·시험
+│   └── m5_draft.py                밴픽 대시보드 엔진
+├── dashboard/                     스카우팅 리포트(build.py → report.html) + 밴픽 대시보드(draft_server.py · draft.html)
+├── HANDOFF.md                     인수인계 (새 환경 준비·규칙·화면·남은 일, 2026-11-11 통합)
+├── README.md                      프로젝트 전체 소개·결과
 │
 └── docs/
     ├── decisions.md               주요 결정과 이유
     ├── runbook.md                 중단·재개 절차
-    ├── M5_HANDOFF.md              M5 실시간 밴픽 추천 설계 (인수인계)
     ├── RESEARCH_PIPELINE.md       딥리서치 과정 전체 (단계별 입출력·에이전트 운영·실행 기록·수치)
-    └── PIPELINE.md                밴픽 데이터 파이프라인 (별도)
+    └── PIPELINE.md                밴픽 데이터 수집 + 모델 M0~M5 설계·실행 기록 (7-7장)
 ```
 
-### `.gitignore`
-```
-.env
-data/
-research/raw/
-research/samples/
-research/claims/
-research/verified/
-research/logs/
-*.duckdb
-.ipynb_checkpoints/
-```
-(`research/config/`, 코드, 검토가 끝난 `profiles/`의 요약본은 공개 가능. 단 원문 인용이 길게 들어간 파일은 제외)
+### `.gitignore` (요지 — 기준은 실제 파일)
+- `.env` (키), `.claude/` (로컬 설정), `*.zip`
+- `data/`, `research/*` (단 `research/config/` 는 포함), `notebooks/`, `*.csv` · `*.csv.gz` · `*.pkl` · `*.jsonl` · `*.duckdb` · `*.parquet`
+- 대시보드 결과물 `dashboard/data.json` · `career/` · `report.html` · `index.html` · `player_sample_Doran.html` (프로필 인용이 들어 있음)
+- 공개되는 것 = 코드 · 설계 문서 · `research/config/`
 
 ### `.env.example`
+키는 `.env` 에만 (2026-11-11 확인: 추적 파일·git 이력에 키 없음). 모델·대시보드 실행에는 필요 없고 수집할 때만 씀.
 ```
-ANTHROPIC_API_KEY=       # S4·S6를 스크립트로 돌릴 때 (Claude Code 구독으로 하면 비워도 됨)
-NAVER_CLIENT_ID=         # S1 네이버 검색 API (뉴스)
-NAVER_CLIENT_SECRET=
+RIOT_API_KEY=            # 솔랭 (Riot 개발 키, 24시간마다 재발급)
+LP_USER= / LP_PASS=      # Leaguepedia 봇 비밀번호 (선택, 레이트리밋 완화)
+ANTHROPIC_API_KEY=       # S4·S6를 스크립트로 돌릴 때만 (Claude Code 구독이면 비워도 됨)
+NAVER_CLIENT_ID= / NAVER_CLIENT_SECRET=   # S1 네이버 검색 API (뉴스)
 YT_API_KEY=              # 유튜브 증분 수집 (코랩에서만)
 ```
 
 ### `requirements.txt`
-```
-pandas
-numpy
-duckdb
-requests
-beautifulsoup4
-trafilatura
-python-dotenv
-tqdm
-rapidfuzz
-anthropic
-mcp
-kiwipiepy
-scikit-learn
-scipy
-matplotlib
-koreanize-matplotlib
-```
-(아래 다섯 줄은 노트북을 로컬에서 다시 돌릴 때 필요)
+실제 파일이 기준 (공통 · src/pipeline · src/research · 노트북 묶음으로 나뉨). 모델 실행에는 `lightgbm` 이 필요 (이 PC 에서는 MS Store 파이썬 3.12 에만 설치 — `HANDOFF.md` 2장).
 
 ---
 
@@ -412,7 +394,7 @@ S8   평가                   코드                            토큰 0
 | **바꾸기 전 (지금 계정)** | `python src/research/runctl.py backfill` → `python src/research/runctl.py status` | Workflow 대화 기록은 이 계정·이 PC의 `~/.claude/projects/` 에만 있음 → **반드시 바꾸기 전에**. 토큰을 쓰지 않는 파이썬 명령이라 한도에 걸린 뒤에도 터미널에서 직접 돌릴 수 있음 |
 | 다른 PC로 가면 | 프로젝트 폴더 통째로 복사 (`data/`·`research/` 포함) | git 에는 코드·문서·설정만 있고 `data/`·`research/` 결과는 `.gitignore` 로 빠져 있음 → git clone 만으로는 부족. 원문이 들어 있으니 공개 저장소에 올리지 않음 |
 | **새 계정에서** | `research/config/budget.yaml` `run.account` 를 `a2`, `a3` … 로 바꿈 | `run.id`(v2)는 그대로 → 상한은 계정 합계. 새 계정 몫을 따로 주려면 `run.token_cap` 을 올림 (사용자 결정) |
-| 새 계정 첫 지시 | 10장 지시 | Claude가 CLAUDE.md → STATUS.md → status 순으로 확인 |
+| 새 계정 첫 지시 | 10장 지시 (리서치) 또는 `HANDOFF.md` 2장 지시 (그 밖) | 메모리로만 있던 규칙(커밋은 사용자가 말할 때만 등)은 `HANDOFF.md` 3장 |
 
 - 한도에 걸리는 순간 돌던 에이전트는 결과 파일이 없거나 깨짐 → status 가 "다시 돌릴 에이전트"로 잡음. 대화 기록상 0 토큰이면 손실 없음 (2026-11-03 Workflow: 42개가 세션 한도로 0 토큰 실패)
 - 한도가 가까우면 Workflow로 한꺼번에 많이 띄우지 말고 몇 개씩
@@ -430,14 +412,16 @@ S8   평가                   코드                            토큰 0
 | 6-1 | 리서치 주장 ↔ 경기 기록 대조 (`src/research/record_check.py` → `research/eval/record_check.md`) | **완료** (2026-11-08). 전반 평가 ↔ 라인 골드 수준 +0.34 (p 0.01), 라인전·챔피언별 평가 ↔ 기록은 거의 무관, 팀 초반 평가 ↔ M3 초반 수행 +0.55 (9팀). 남은 검증: 재현율(놓친 여론), 프로필 요약 충실도 |
 | 8 | 라이엇 API | 리서치에는 불필요 (챔피언은 Data Dragon, 경기는 OE). 솔랭은 밴픽 파이프라인 G단계(`docs/PIPELINE.md`) |
 | 10 | 밴픽 모델 M0~M4 (`docs/PIPELINE.md` 7-7) | **완료** (2026-11-07). M4 고정(`data/processed/2026/m4/final/`) 후 플레이오프 55경기 1회 검증: 픽 top5 63.5%·밴 64.7% (기준선 41.6·43.8). 이후 M4 변경 없음 |
-| 11 | M5 실시간 추천 (`docs/M5_HANDOFF.md`) | **시험판** `m5_sim.py` (2026-11-08): 확률 보정 `m5_calibrate.py` (페이즈별 τ 0.84~0.98) · 이길 가치 = 10·15·20·25분 골드 경로 `m5_value.py` + `m5_value_w.py` (평가 패치 5개, M1 가중치 ≈ 0 이라 M1 없이) · 몬테카를로 + 조합 단위 승률 (밴은 거의 동점) · 상태 입력 특징 `m5_state.py` (학습 표와 차이 0) · 리허설 재생 검증 `m5_replay.py` (남은 픽 확률: 굴리기가 독립 합보다 나음, 리허설 밖 26.08~10 에서도) · 1수 앞보기 · 밴 기준(상대 조합 가치 감소 + 선수 숙련 δ × 0.32) · 피어리스 시리즈(`--sets`·`--prev`) · **밴픽 대시보드** `dashboard/draft_server.py` (상대 자동·T1 추천 카드·두 장 동시 픽·팀 실력 차 Elo, 2026-11-08). 근거로만: 상성 `m5_counter.py`. **추천 검증** `m5_rec_check.py` (2026-11-09, LCK 301경기 학습 밖: 조합 가치가 승패를 맞히고 추천에서 벗어난 만큼 더 짐, 인과 아님) · 추천 쏠림 동점권 규칙 `m5_rec_diverse.py` (채택, 효과 작음) · 조합 맥락 시험 `m5_ctx.py` (M1 비가산 몫, 대회에서 예측 개선 없음 → 채택 안 함) · 밴 검증 `m5_ban_check.py` (기준 미달: 상대 픽 확률은 맞으나 밴 가치는 근거 약함 → 대시보드에 표시). 다음: 높은 확률 과신 |
+| 11 | M5 실시간 추천 (`HANDOFF.md`, `docs/PIPELINE.md` 7-7) | **완료** — 시험판 `m5_sim.py` (2026-11-08): 확률 보정 `m5_calibrate.py` (페이즈별 τ 0.84~0.98) · 이길 가치 = 10·15·20·25분 골드 경로 `m5_value.py` + `m5_value_w.py` (평가 패치 5개, M1 가중치 ≈ 0 이라 M1 없이) · 몬테카를로 + 조합 단위 승률 (밴은 거의 동점) · 상태 입력 특징 `m5_state.py` (학습 표와 차이 0) · 리허설 재생 검증 `m5_replay.py` (남은 픽 확률: 굴리기가 독립 합보다 나음, 리허설 밖 26.08~10 에서도) · 1수 앞보기 · 밴 기준(상대 조합 가치 감소 + 선수 숙련 δ × 0.32) · 피어리스 시리즈(`--sets`·`--prev`) · **밴픽 대시보드** `dashboard/draft_server.py` (상대 자동·T1 추천 카드·두 장 동시 픽·팀 실력 차 Elo, 2026-11-08). 근거로만: 상성 `m5_counter.py`. **추천 검증** `m5_rec_check.py` (2026-11-09, LCK 301경기 학습 밖: 조합 가치가 승패를 맞히고 추천에서 벗어난 만큼 더 짐, 인과 아님) · 추천 쏠림 동점권 규칙 `m5_rec_diverse.py` (채택, 효과 작음) · 조합 맥락 시험 `m5_ctx.py` (M1 비가산 몫, 대회에서 예측 개선 없음 → 채택 안 함) · 밴 검증 `m5_ban_check.py` (기준 미달: 상대 픽 확률은 맞으나 밴 가치는 근거 약함 → 대시보드에 표시). **2026-11-11: 모델 개발은 여기서 멈춤** (남은 선택 과제: 높은 확률 과신, 다른 리그 플레이오프 확인 — `HANDOFF.md` 7장) |
 | 12 | 대시보드 (`HANDOFF.md`) | 선수·팀 페이지 완료. **밴픽 추천 화면 완료** (`dashboard/draft.html`, 로컬 서버) · 실제 경기 대조 탭 (2026-11-09, `m5_rec_check.py` → `replay.json`). 팀 페이지 개편은 아직 |
 
 ---
 
 ## 9. 진행 상태
 
-**최신 값은 항상 `research/logs/STATUS.md`** (`runctl.py status` 가 결과 파일에서 새로 만듦). 아래는 2026-11-03 15:27 기록. status 의 "완료 → S7 사람 검토"는 S6까지 끝났다는 뜻이고, S7(표본 검토)·확정본(`profiles/{대상}.md`)은 5장 S7대로 68개 모두 끝남.
+> **2026-11-11 요약**: 리서치·밴픽 모델·대시보드 모두 끝남. 남은 일은 `HANDOFF.md` 7장 (팀 페이지 개편, 포트폴리오 공개판, 동료 작업과 합칠지 등).
+
+**리서치 최신 값은 항상 `research/logs/STATUS.md`** (`runctl.py status` 가 결과 파일에서 새로 만듦). 아래는 2026-11-03 15:27 기록. status 의 "완료 → S7 사람 검토"는 S6까지 끝났다는 뜻이고, S7(표본 검토)·확정본(`profiles/{대상}.md`)은 5장 S7대로 68개 모두 끝남.
 
 | 다음 할 일 | 대상 |
 |---|---|
