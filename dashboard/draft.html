@@ -39,7 +39,8 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .btn{border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:8px 12px;font-size:13.5px}
 .btn:hover{border-color:var(--gold)}
 .btn.gold{background:linear-gradient(180deg,#d8bb7d,#a8884d);color:#1a1307;border-color:#d8bb7d}
-.toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute)}
+.toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute);white-space:nowrap}
+.top .btn{white-space:nowrap}
 .toggle input{accent-color:var(--gold)}
 
 /* ---------- 밴픽 판 (중계 화면식) */
@@ -207,8 +208,9 @@ button{font-family:inherit;color:inherit;cursor:pointer}
     <button class="home" id="homeBtn" title="새 경기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button>
     <div class="ttl"><div class="eye" id="eye">—</div><h1 id="h1">T1 밴픽 추천</h1></div>
     <div class="right">
-      <label class="toggle"><input type="checkbox" id="autoOpp" checked> 상대 자동 진행</label>
+      <label class="toggle"><input type="checkbox" id="autoOpp" checked> <span id="autoLbl">상대 자동 진행</span></label>
       <button class="btn" id="undoBtn">↶ 되돌리기</button>
+      <button class="btn lang" title="한국어 / English">EN</button>
       <div class="winbox"><div class="v num" id="winNow">—</div><div class="s" id="winBase">—</div></div>
     </div>
   </div>
@@ -216,7 +218,7 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   <div class="main">
     <div class="panel" id="panel"></div>
     <div class="panel picker">
-      <h2>챔피언 <span class="t" style="font-size:15px" id="pickWho"></span></h2>
+      <h2><span id="pickTitle">챔피언</span> <span class="t" style="font-size:15px" id="pickWho"></span></h2>
       <div class="who" id="pickHint">누르면 지금 차례에 그 챔피언을 고릅니다</div>
       <div class="tools"><input id="q" placeholder="챔피언 검색 (한글·영문)"></div>
       <div class="roles" id="roles"></div>
@@ -226,24 +228,24 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 </div>
 
 <div class="modal" id="setup"><div class="mbox">
-  <div class="tabs" id="modeTabs"><button data-m="sim" class="on">가상 경기</button><button data-m="replay">실제 경기 대조</button></div>
+  <div style="display:flex;align-items:flex-start;gap:8px"><div class="tabs" id="modeTabs"><button data-m="sim" class="on">가상 경기</button><button data-m="replay">실제 경기 대조</button></div><button class="btn lang" style="margin-left:auto" title="한국어 / English">EN</button></div>
   <div id="simPane">
-  <h2>새 경기 — 상대 고르기</h2>
-  <div class="note" style="color:var(--mute);font-size:13px">가상 경기일 2026-08-26 · 자료는 08-25 까지 (리서치 기간). 라인업 = 08-25 이전 마지막 LCK 경기</div>
+  <h2 id="simH">새 경기 — 상대 고르기</h2>
+  <div class="note" id="simNote" style="color:var(--mute);font-size:13px"></div>
   <div class="teams" id="teams"></div>
   <div class="opts">
-    <div><div class="dl" style="margin-bottom:4px">픽 순서 (First Selection)</div><div class="seg2" id="optFirst"><button data-v="0" class="on">T1 후픽</button><button data-v="1">T1 선픽</button></div></div>
-    <div><div class="dl" style="margin-bottom:4px">진영</div><div class="seg2" id="optSide"><button data-v="1" class="on">T1 블루</button><button data-v="0">T1 레드</button></div></div>
+    <div><div class="dl" id="lblFirst" style="margin-bottom:4px"></div><div class="seg2" id="optFirst"><button data-v="0" class="on"></button><button data-v="1"></button></div></div>
+    <div><div class="dl" id="lblSide" style="margin-bottom:4px"></div><div class="seg2" id="optSide"><button data-v="1" class="on"></button><button data-v="0"></button></div></div>
   </div>
   <button class="btn gold" id="startBtn">시작</button>
-  <div class="foot">상대 차례는 M4 예측 1순위로 자동 진행됩니다 (끄면 상대 실제 선택을 챔피언 판에서 직접 입력). T1 차례마다 몬테카를로로 남은 드래프트를 굴려 추천합니다.<br>예상 승률 = 팀 실력 차(Elo)·진영 + 챔피언 이길 가치(시간대 골드 경로) + 선수 숙련 편차. 리허설로 검증한 건 "상대가 무엇을 고를지" 확률이고, 승률은 참고치입니다.</div>
+  <div class="foot" id="simFoot"></div>
   </div>
   <div id="replayPane" style="display:none">
-    <h2>실제 경기 대조</h2>
-    <div class="note" style="color:var(--mute);font-size:13px">LCK 26.07~26.16 정규시즌·RTM. 세트(패치)마다 <b>그 세트 시작 전 자료로만</b> 다시 만든 M4·이길 가치로 계산한 추천을 실제 드래프트·실제 승패와 나란히 봅니다 (학습 밖). 플레이오프는 없음</div>
-    <div class="opts" style="margin:10px 0"><div class="seg2" id="rpFilter"><button data-v="T1" class="on">T1 경기</button><button data-v="ALL">전체</button></div></div>
-    <div class="rlist" id="rpList"><div class="spin">불러오는 중…</div></div>
-    <div class="foot">예상 = 경기 전 승률 (Elo·진영 + 실제 완성 조합 이길 가치). 놓친 몫 = 픽 차례마다 그 시점 추천 1순위 − 실제 픽 예상 승률 합 (%p). 밴은 추천 대조 안 함. 관찰 자료라 "추천대로 했으면 이겼다"는 증명이 아님</div>
+    <h2 id="rpH">실제 경기 대조</h2>
+    <div class="note" id="rpNote" style="color:var(--mute);font-size:13px"></div>
+    <div class="opts" style="margin:10px 0"><div class="seg2" id="rpFilter"><button data-v="T1" class="on"></button><button data-v="ALL"></button></div></div>
+    <div class="rlist" id="rpList"><div class="spin"></div></div>
+    <div class="foot" id="rpFoot"></div>
   </div>
 </div></div>
 <div class="toast" id="toast"></div>
@@ -255,12 +257,66 @@ const THEMES = {"T1":{short:"T1",a:"#e4002b"},"Gen.G":{short:"GEN",a:"#b8955a"},
 const PHASES=[["1밴",1,6],["1픽",7,12],["2밴",13,16],["2픽",17,20]];
 let META=null, ST=null, REC=null, ROLE="ALL", SETUP={opp:null,first:0,blue:1}, busy=false, autoTimer=null;
 const $=s=>document.querySelector(s);
+
+// ---------------- 한/영 전환 (2026-11-11). 챔피언 영어 이름 = cid (champ_ko.json 키), 선수 이름은 원래 영문
+let LANG=(()=>{try{return localStorage.getItem("draftLang")==="en"?"en":"ko"}catch(e){return "ko"}})();
+const L=(k,e)=>LANG==="en"?e:k;
+const PH_EN={"1밴":"Ban 1","1픽":"Pick 1","2밴":"Ban 2","2픽":"Pick 2"};
+const phl=p=>L(p,PH_EN[p]);
+const KIND_EN={"주력":"Main","숙련":"Mastery","숙련 약함":"Weak mastery","조합":"Synergy","상성":"Matchup","뺏기":"Deny",
+  "상대 숙련":"Opp. mastery","상대 주력":"Opp. main","상대 확률":"Opp. odds"};
+const posl=r=>r?((LANG==="en"?META.pos_en:META.pos_ko)[r]||""):"";
+const BP=a=>a==="ban"?L("밴","ban"):L("픽","pick");
+const PP_=()=>LANG==="en"?" pp":"%p";
+const stepTxt=n=>L(`${n}단계`,`Step ${n}`);
+const setTxt=n=>L(`${n}세트`,`Game ${n}`);
+
+function applyStatic(){
+  document.documentElement.lang=LANG;
+  document.title=L("T1 밴픽 추천","T1 Draft Assistant");
+  document.querySelectorAll(".lang").forEach(b=>b.textContent=L("EN","한국어"));
+  $("#homeBtn").title=L("새 경기","New match");
+  $("#autoLbl").textContent=L("상대 자동 진행","Auto-play opponent");
+  $("#undoBtn").textContent=L("↶ 되돌리기","↶ Undo");
+  if($("#pickTitle")) $("#pickTitle").textContent=L("챔피언","Champions");
+  if($("#pickHint")) $("#pickHint").textContent=L("누르면 지금 차례에 그 챔피언을 고릅니다","Click a champion to use it for the current turn");
+  if($("#q")) $("#q").placeholder=L("챔피언 검색 (한글·영문)","Search champions (EN / KR)");
+  const [tSim,tRp]=$("#modeTabs").querySelectorAll("button");
+  tSim.textContent=L("가상 경기","Simulated match"); tRp.textContent=L("실제 경기 대조","Real-game replay");
+  $("#simH").textContent=L("새 경기 — 상대 고르기","New match — choose an opponent");
+  $("#simNote").textContent=L("가상 경기일 2026-08-26 · 자료는 08-25 까지 (리서치 기간). 라인업 = 08-25 이전 마지막 LCK 경기",
+    "Simulated match date 2026-08-26 · data through 08-25. Lineups = each team's last LCK game before 08-25");
+  $("#lblFirst").textContent=L("픽 순서 (First Selection)","Pick order (First Selection)");
+  const [f0,f1]=$("#optFirst").querySelectorAll("button"); f0.textContent=L("T1 후픽","T1 picks second"); f1.textContent=L("T1 선픽","T1 picks first");
+  $("#lblSide").textContent=L("진영","Side");
+  const [s1,s0]=$("#optSide").querySelectorAll("button"); s1.textContent=L("T1 블루","T1 blue"); s0.textContent=L("T1 레드","T1 red");
+  $("#startBtn").textContent=L("시작","Start");
+  $("#simFoot").innerHTML=L(`상대 차례는 M4 예측 1순위로 자동 진행됩니다 (끄면 상대 실제 선택을 챔피언 판에서 직접 입력). T1 차례마다 몬테카를로로 남은 드래프트를 굴려 추천합니다.<br>예상 승률 = 팀 실력 차(Elo)·진영 + 챔피언 이길 가치(시간대 골드 경로) + 선수 숙련 편차. 리허설로 검증한 건 "상대가 무엇을 고를지" 확률이고, 승률은 참고치입니다.`,
+    `Opponent turns auto-play M4's top prediction (turn this off to enter the opponent's real choice from the champion grid). On every T1 turn the rest of the draft is simulated with Monte Carlo rollouts to rank the options.<br>Expected win rate = team strength gap (Elo) and side + champion win value (gold-lead paths by game time) + player mastery deviation. What was validated in rehearsal is the probability of what the opponent picks; win rates are indicative only.`);
+  $("#rpH").textContent=L("실제 경기 대조","Real-game replay");
+  $("#rpNote").innerHTML=L(`LCK 26.07~26.16 정규시즌·RTM. 세트(패치)마다 <b>그 세트 시작 전 자료로만</b> 다시 만든 M4·이길 가치로 계산한 추천을 실제 드래프트·실제 승패와 나란히 봅니다 (학습 밖). 플레이오프는 없음`,
+    `LCK patches 26.07–26.16, regular season and Road to MSI. For each game, recommendations come from M4 and win values rebuilt <b>only from data before that game's patch</b>, shown next to the real draft and result (out of sample). Playoffs excluded.`);
+  const [r0,r1]=$("#rpFilter").querySelectorAll("button"); r0.textContent=L("T1 경기","T1 games"); r1.textContent=L("전체","All games");
+  if(!RPL) $("#rpList").innerHTML=`<div class="spin">${L("불러오는 중…","Loading…")}</div>`;
+  $("#rpFoot").textContent=L(`예상 = 경기 전 승률 (Elo·진영 + 실제 완성 조합 이길 가치). 놓친 몫 = 픽 차례마다 그 시점 추천 1순위 − 실제 픽 예상 승률 합 (%p). 밴은 추천 대조 안 함. 관찰 자료라 "추천대로 했으면 이겼다"는 증명이 아님`,
+    `Expected = pre-game win rate (Elo and side + win value of the final compositions). Missed value = sum over pick turns of (top recommendation − actual pick) expected win rate, in pp. Bans are not compared. Observational data: not proof that following the recommendations would have won.`);
+}
+function setLang(l){
+  LANG=l; try{localStorage.setItem("draftLang",l)}catch(e){}
+  applyStatic();
+  if(MODE!=="replay") initRoles();
+  if($("#setup").classList.contains("on")){openSetup(); if($("#replayPane").style.display!=="none"&&RPL) rpDrawList();}
+  if(MODE==="replay"&&RG) rpRender();
+  else if(ST){renderTop();renderBoard();renderPanel();renderGrid(); if(REC&&REC.step===ST.step&&ST.us_turn) drawRec();}
+}
+document.querySelectorAll(".lang").forEach(b=>b.onclick=()=>setLang(LANG==="en"?"ko":"en"));
+
 const sq=id=>`https://ddragon.leagueoflegends.com/cdn/${META.ddragon}/img/champion/${id}.png`;
 const ld=id=>`https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${id}_0.jpg`;
 const cen=id=>`https://ddragon.leagueoflegends.com/cdn/img/champion/centered/${id}_0.jpg`;
 const spl=id=>`https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${id}_0.jpg`;
 function fb(img){const l=(img.dataset.fb||"").split("|").filter(Boolean); if(!l.length){img.onerror=null;img.style.display="none";return} img.src=l.shift(); img.dataset.fb=l.join("|")}
-const ko=id=>(META.champs.find(c=>c.id===id)||{}).ko||id;
+const ko=id=>{if(!id) return ""; const c=META.champs.find(c=>c.id===id)||{}; return (LANG==="en"?c.en:c.ko)||id};
 const pct=(v,d=1)=>(v*100).toFixed(d)+"%";
 const sgn=(v,d=1)=>(v>=0?"+":"")+v.toFixed(d);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -283,7 +339,7 @@ for(const [id,key] of [["#optFirst","first"],["#optSide","blue"]]){
   $(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{SETUP[key]=+b.dataset.v;$(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))});
 }
 $("#startBtn").onclick=async()=>{
-  if(!SETUP.opp){toast("상대 팀을 고르세요");return}
+  if(!SETUP.opp){toast(L("상대 팀을 고르세요","Choose an opponent first"));return}
   $("#setup").classList.remove("on"); leaveReplay();
   setState(await api("/api/new",{opp:SETUP.opp,t1_first:!!SETUP.first,t1_blue:!!SETUP.blue}));
 };
@@ -304,19 +360,19 @@ async function rpLoadList(){
 }
 function rpDrawList(){
   const t1Only=RPF==="T1";
-  const L=RPL.filter(g=>!t1Only||g.blue===META.us||g.red===META.us).slice().reverse();
-  const rows=L.map(g=>{
+  const L_=RPL.filter(g=>!t1Only||g.blue===META.us||g.red===META.us).slice().reverse();
+  const rows=L_.map(g=>{
     const me=t1Only?META.us:g.blue, opp=me===g.blue?g.red:g.blue;
     const pe=me===g.blue?g.p_elo_blue:1-g.p_elo_blue, pd=me===g.blue?g.p_draft_blue:1-g.p_draft_blue;
     const won=g.winner===me, hit=(pd>0.5)===won;
-    return `<tr class="g" data-gid="${esc(g.gid)}"><td class="num">${g.day.slice(5)}</td><td>${esc(g.set)} · ${g.n_game}세트</td><td>${t1Only?"vs ":esc(short(me))+" vs "}${esc(opp)} <span class="dl">${me===g.blue?"블루":"레드"}${g.fp===me?" · 선픽":""}</span></td>
-      <td class="${won?"w-y":"w-n"}">${won?"승":"패"}</td><td class="num">${pct(pe,0)}</td><td class="num">${pct(pd,0)} <span class="${hit?"w-y":"w-n"}">${hit?"✓":"✗"}</span></td>
+    return `<tr class="g" data-gid="${esc(g.gid)}"><td class="num">${g.day.slice(5)}</td><td>${esc(g.set)} · ${setTxt(g.n_game)}</td><td>${t1Only?"vs ":esc(short(me))+" vs "}${esc(opp)} <span class="dl">${me===g.blue?L("블루","blue"):L("레드","red")}${g.fp===me?L(" · 선픽"," · 1st pick"):""}</span></td>
+      <td class="${won?"w-y":"w-n"}">${won?L("승","W"):L("패","L")}</td><td class="num">${pct(pe,0)}</td><td class="num">${pct(pd,0)} <span class="${hit?"w-y":"w-n"}">${hit?"✓":"✗"}</span></td>
       <td class="num">${(g.miss[me]||0).toFixed(1)} / ${(g.miss[opp]||0).toFixed(1)}</td></tr>`}).join("");
-  const col=t1Only?"T1":"블루";
-  const n=L.length, w=L.filter(g=>g.winner===(t1Only?META.us:g.blue)).length;
-  const hits=L.filter(g=>{const me=t1Only?META.us:g.blue, pd=me===g.blue?g.p_draft_blue:1-g.p_draft_blue; return (pd>0.5)===(g.winner===me)}).length;
-  $("#rpList").innerHTML=`<div class="dl" style="padding:8px 10px">${n}경기 · ${col} ${w}승 ${n-w}패 · 조합 포함 예상이 승패를 맞힌 경기 ${hits}/${n}</div>
-    <table><tr><th>날짜</th><th>패치</th><th>상대</th><th>${col} 결과</th><th>실력 차만</th><th>+ 조합</th><th>놓친 몫 ${col} / 상대</th></tr>${rows}</table>`;
+  const col=t1Only?"T1":L("블루","Blue");
+  const n=L_.length, w=L_.filter(g=>g.winner===(t1Only?META.us:g.blue)).length;
+  const hits=L_.filter(g=>{const me=t1Only?META.us:g.blue, pd=me===g.blue?g.p_draft_blue:1-g.p_draft_blue; return (pd>0.5)===(g.winner===me)}).length;
+  $("#rpList").innerHTML=`<div class="dl" style="padding:8px 10px">${L(`${n}경기 · ${col} ${w}승 ${n-w}패 · 조합 포함 예상이 승패를 맞힌 경기 ${hits}/${n}`,`${n} games · ${col} ${w}W ${n-w}L · forecast incl. draft called the winner in ${hits}/${n}`)}</div>
+    <table><tr><th>${L("날짜","Date")}</th><th>${L("패치","Patch")}</th><th>${L("상대","Opponent")}</th><th>${col} ${L("결과","result")}</th><th>${L("실력 차만","Strength only")}</th><th>${L("+ 조합","+ draft")}</th><th>${L(`놓친 몫 ${col} / 상대`,`Missed ${col} / opp.`)}</th></tr>${rows}</table>`;
   $("#rpList").querySelectorAll("tr.g").forEach(r=>r.onclick=()=>rpOpen(r.dataset.gid));
 }
 async function rpOpen(gid){
@@ -328,50 +384,53 @@ async function rpOpen(gid){
 function rpGo(st){RCUR=Math.max(0,Math.min(20,st)); rpRender()}
 function rpState(){
   const g=RG;
-  const steps=g.steps.map(x=>({step:x.step,action:x.action,team:x.team,cid:x.step<=RCUR?x.cid:null,role:x.role,name:x.step<=RCUR?ko(x.cid):null}));
+  const steps=g.steps.map(x=>({step:x.step,action:x.action,team:x.team,cid:x.step<=RCUR?x.cid:null,role:x.role}));
   return {replay:true, steps, blue:g.blue, red:g.red, fp:g.fp, lineup:g.players, fearless:g.fearless, set:g.n_game, done:RCUR>=20, step:RCUR+1,
-          setText:`${g.day.slice(5)} · ${g.n_game}세트 · 피어리스 ${g.fearless.length}`,
-          midText:`실제 경기 · 승자 ${esc(short(g.winner))}<br>그 시점 모델 (학습 밖)`};
+          setText:`${g.day.slice(5)} · ${setTxt(g.n_game)} · ${L("피어리스","Fearless")} ${g.fearless.length}`,
+          midText:L(`실제 경기 · 승자 ${esc(short(g.winner))}<br>그 시점 모델 (학습 밖)`,`Real game · winner ${esc(short(g.winner))}<br>model as of then (out of sample)`)};
 }
 function rpRender(){
   const g=RG, me=g.me, opp=g.opp, isB=me===g.blue;
   ST=rpState(); renderBoard();
   const pe=isB?g.p_elo_blue:1-g.p_elo_blue, pd=isB?g.p_draft_blue:1-g.p_draft_blue, won=g.winner===me;
-  $("#eye").textContent=`실제 경기 대조 · ${g.day} · ${g.set} ${g.n_game}세트`;
-  $("#h1").innerHTML=`<span class="t">${esc(short(me))}</span> vs ${esc(opp)} <span class="badge" style="background:${won?"#123826":"#3a1820"};color:${won?"#7be3a6":"#ff8fa0"}">실제 ${won?"승":"패"}</span>`;
-  $("#winNow").textContent=pct(pd); $("#winBase").textContent=`완성 조합 기준 ${short(me)} 예상 · 실력 차·진영만 ${pct(pe)}`;
+  const WL=won?L("승","win"):L("패","loss");
+  $("#eye").textContent=L(`실제 경기 대조 · ${g.day} · ${g.set} ${g.n_game}세트`,`Real-game replay · ${g.day} · ${g.set} game ${g.n_game}`);
+  $("#h1").innerHTML=`<span class="t">${esc(short(me))}</span> vs ${esc(opp)} <span class="badge" style="background:${won?"#123826":"#3a1820"};color:${won?"#7be3a6":"#ff8fa0"}">${L("실제 ","actual ")}${WL}</span>`;
+  $("#winNow").textContent=pct(pd); $("#winBase").textContent=L(`완성 조합 기준 ${short(me)} 예상 · 실력 차·진영만 ${pct(pe)}`,`${short(me)} forecast with final draft · strength & side only ${pct(pe)}`);
   document.querySelector(".toggle").style.display="none"; $("#undoBtn").style.display="none";
   const cur=RCUR>=1?g.steps[RCUR-1]:null;
   let det="";
-  if(!cur) det=`<div class="note">◀ ▶ 또는 판 가운데 점을 눌러 단계를 옮깁니다. 지금은 드래프트 시작 전.</div>`;
-  else if(cur.action==="ban") det=`<div class="note">${RCUR}단계 ${esc(short(cur.team))} 밴 → <b>${esc(ko(cur.cid))}</b>. 밴은 추천 대조를 하지 않았습니다 (픽만 검증).</div>`;
-  else if(!cur.rec) det=`<div class="note">${RCUR}단계 ${esc(short(cur.team))} 픽 → <b>${esc(ko(cur.cid))}</b> (추천 계산 없음)</div>`;
+  if(!cur) det=`<div class="note">${L("◀ ▶ 또는 판 가운데 점을 눌러 단계를 옮깁니다. 지금은 드래프트 시작 전.","Use ◀ ▶ or the dots in the middle of the board to move between steps. Currently before the draft starts.")}</div>`;
+  else if(cur.action==="ban") det=`<div class="note">${L(`${RCUR}단계 ${esc(short(cur.team))} 밴 → <b>${esc(ko(cur.cid))}</b>. 밴은 추천 대조를 하지 않았습니다 (픽만 검증).`,`Step ${RCUR}: ${esc(short(cur.team))} bans <b>${esc(ko(cur.cid))}</b>. Bans were not compared with recommendations (picks only).`)}</div>`;
+  else if(!cur.rec) det=`<div class="note">${L(`${RCUR}단계 ${esc(short(cur.team))} 픽 → <b>${esc(ko(cur.cid))}</b> (추천 계산 없음)`,`Step ${RCUR}: ${esc(short(cur.team))} picks <b>${esc(ko(cur.cid))}</b> (no recommendation computed)`)}</div>`;
   else{
     const r=cur.rec, miss=(r.wp_best-r.wp_actual)*100;
     const inTop=r.top.some(x=>x.cid===cur.cid);
-    const rows=r.top.map((x,i)=>`<tr class="${x.cid===cur.cid?"act":""}"><td>${i+1}</td><td><img src="${sq(x.cid)}">${esc(ko(x.cid))}${x.cid===cur.cid?' <span class="badge">실제 픽</span>':""}</td><td class="num">${pct(x.wp)}</td><td class="num">${sgn((x.wp-r.wp_actual)*100,1)}%p</td></tr>`).join("")
-      +(inTop?"":`<tr class="act"><td>${r.rank?r.rank:"후보 밖"}</td><td><img src="${sq(cur.cid)}">${esc(ko(cur.cid))} <span class="badge">실제 픽</span></td><td class="num">${pct(r.wp_actual)}</td><td class="num">0</td></tr>`);
-    det=`<div class="note">${RCUR}단계 <b>${esc(short(cur.team))}</b> 픽 — 실제 <b>${esc(ko(cur.cid))}</b> · 추천 순위 ${r.rank?r.rank+"위":"후보 밖"} / ${r.n_cand} · 놓친 몫 <b style="color:${miss>3?"var(--bad)":"var(--fg)"}">${miss.toFixed(1)}%p</b><br>
-      평소 확률(M4) 상위: ${r.habit.map(h=>`${esc(ko(h.cid))} ${pct(h.p,0)}`).join(" · ")}</div>
-      <table class="rt"><tr><th>추천</th><th>챔피언</th><th>굴리기 예상 승률</th><th>실제 픽 대비</th></tr>${rows}</table>
-      <div class="dl" style="margin-top:6px">예상 승률 = 그 단계까지 실제 선택 뒤 남은 드래프트를 300번 굴린 이길 가치 차 (팀 실력 차 제외 · 숙련 δ 없음)</div>`;
+    const badge=`<span class="badge">${L("실제 픽","actual pick")}</span>`;
+    const rows=r.top.map((x,i)=>`<tr class="${x.cid===cur.cid?"act":""}"><td>${i+1}</td><td><img src="${sq(x.cid)}">${esc(ko(x.cid))}${x.cid===cur.cid?" "+badge:""}</td><td class="num">${pct(x.wp)}</td><td class="num">${sgn((x.wp-r.wp_actual)*100,1)}${PP_()}</td></tr>`).join("")
+      +(inTop?"":`<tr class="act"><td>${r.rank?r.rank:L("후보 밖","not in list")}</td><td><img src="${sq(cur.cid)}">${esc(ko(cur.cid))} ${badge}</td><td class="num">${pct(r.wp_actual)}</td><td class="num">0</td></tr>`);
+    const rk=r.rank?L(r.rank+"위","#"+r.rank):L("후보 밖","not in list");
+    det=`<div class="note">${L(`${RCUR}단계 <b>${esc(short(cur.team))}</b> 픽 — 실제 <b>${esc(ko(cur.cid))}</b> · 추천 순위 ${rk} / ${r.n_cand} · 놓친 몫`,`Step ${RCUR}: <b>${esc(short(cur.team))}</b> pick — actual <b>${esc(ko(cur.cid))}</b> · recommendation rank ${rk} / ${r.n_cand} · missed value`)} <b style="color:${miss>3?"var(--bad)":"var(--fg)"}">${miss.toFixed(1)}${PP_()}</b><br>
+      ${L("평소 확률(M4) 상위","Most likely by habit (M4)")}: ${r.habit.map(h=>`${esc(ko(h.cid))} ${pct(h.p,0)}`).join(" · ")}</div>
+      <table class="rt"><tr><th>${L("추천","Rank")}</th><th>${L("챔피언","Champion")}</th><th>${L("굴리기 예상 승률","Rollout win rate")}</th><th>${L("실제 픽 대비","vs actual pick")}</th></tr>${rows}</table>
+      <div class="dl" style="margin-top:6px">${L("예상 승률 = 그 단계까지 실제 선택 뒤 남은 드래프트를 300번 굴린 이길 가치 차 (팀 실력 차 제외 · 숙련 δ 없음)","Win rate = win-value gap after rolling out the rest of the draft 300 times from the real choices so far (excludes team strength · no mastery δ)")}</div>`;
   }
-  $("#panel").innerHTML=`<h2>실제 경기 대조 <span class="badge">학습 밖 · ${esc(g.set)} 시작 전 자료</span></h2>
+  $("#panel").innerHTML=`<h2>${L("실제 경기 대조","Real-game replay")} <span class="badge">${L(`학습 밖 · ${esc(g.set)} 시작 전 자료`,`out of sample · data before ${esc(g.set)}`)}</span></h2>
     <div class="sumrow">
-      <div class="bx"><div class="v ${won?"w-y":"w-n"}">${won?"승":"패"}</div><div class="s">실제 결과 (${esc(short(me))})</div></div>
-      <div class="bx"><div class="v num">${pct(pe)} → ${pct(pd)}</div><div class="s">경기 전 예상: 실력 차·진영만 → + 실제 조합</div></div>
-      <div class="bx"><div class="v num">${(g.miss[me]||0).toFixed(1)} / ${(g.miss[opp]||0).toFixed(1)}</div><div class="s">놓친 몫 %p (${esc(short(me))} / ${esc(short(opp))}) · 작을수록 추천에 가까움</div></div>
+      <div class="bx"><div class="v ${won?"w-y":"w-n"}">${won?L("승","Win"):L("패","Loss")}</div><div class="s">${L("실제 결과","Actual result")} (${esc(short(me))})</div></div>
+      <div class="bx"><div class="v num">${pct(pe)} → ${pct(pd)}</div><div class="s">${L("경기 전 예상: 실력 차·진영만 → + 실제 조합","Pre-game forecast: strength & side → + actual draft")}</div></div>
+      <div class="bx"><div class="v num">${(g.miss[me]||0).toFixed(1)} / ${(g.miss[opp]||0).toFixed(1)}</div><div class="s">${L(`놓친 몫 %p (${esc(short(me))} / ${esc(short(opp))}) · 작을수록 추천에 가까움`,`Missed value, pp (${esc(short(me))} / ${esc(short(opp))}) · lower = closer to recommendations`)}</div></div>
     </div>
-    <div class="stepnav"><button class="btn" id="rpPrev">◀</button><button class="btn" id="rpNext">▶</button><button class="btn" id="rpStart">처음</button><button class="btn" id="rpEnd">끝</button>
-      <span class="lab">${RCUR}/20 단계${cur?` · ${phaseOf(RCUR)}`:""}</span><button class="btn" id="rpBack">목록</button></div>${det}`;
+    <div class="stepnav"><button class="btn" id="rpPrev">◀</button><button class="btn" id="rpNext">▶</button><button class="btn" id="rpStart">${L("처음","Start")}</button><button class="btn" id="rpEnd">${L("끝","End")}</button>
+      <span class="lab">${L(`${RCUR}/20 단계`,`Step ${RCUR}/20`)}${cur?` · ${phl(phaseOf(RCUR))}`:""}</span><button class="btn" id="rpBack">${L("목록","Game list")}</button></div>${det}`;
   $("#rpPrev").onclick=()=>rpGo(RCUR-1); $("#rpNext").onclick=()=>rpGo(RCUR+1); $("#rpStart").onclick=()=>rpGo(0); $("#rpEnd").onclick=()=>rpGo(20);
   $("#rpBack").onclick=()=>{openSetup();setMode("replay")};
   const picks=g.steps.filter(x=>x.action==="pick");
   const pr=picks.map(x=>{const r=x.rec, m=r?(r.wp_best-r.wp_actual)*100:null, t=r&&r.top[0];
     return `<tr class="cl ${x.step===RCUR?"cur":""}" data-st="${x.step}"><td>${x.step}</td><td style="color:${color(x.team)}">${esc(short(x.team))}</td><td><img src="${sq(x.cid)}">${esc(ko(x.cid))}</td>
-      <td>${t?`<img src="${sq(t.cid)}">${esc(ko(t.cid))}`:"—"}</td><td class="num">${r?(r.rank?r.rank+"위":"밖"):"—"}</td><td class="num">${m==null?"—":m.toFixed(1)}</td></tr>`}).join("");
-  document.querySelector(".picker").innerHTML=`<h2>픽 차례 한눈에</h2><div class="who">실제 픽 · 그 시점 추천 1순위 · 실제 픽 추천 순위 · 놓친 몫(%p). 누르면 그 단계로</div>
-    <table class="rt"><tr><th>단계</th><th>팀</th><th>실제</th><th>추천 1순위</th><th>순위</th><th>놓친</th></tr>${pr}</table>`;
+      <td>${t?`<img src="${sq(t.cid)}">${esc(ko(t.cid))}`:"—"}</td><td class="num">${r?(r.rank?L(r.rank+"위","#"+r.rank):L("밖","out")):"—"}</td><td class="num">${m==null?"—":m.toFixed(1)}</td></tr>`}).join("");
+  document.querySelector(".picker").innerHTML=`<h2>${L("픽 차례 한눈에","All pick turns")}</h2><div class="who">${L("실제 픽 · 그 시점 추천 1순위 · 실제 픽 추천 순위 · 놓친 몫(%p). 누르면 그 단계로","Actual pick · top recommendation at that point · rank of the actual pick · missed value (pp). Click to jump to that step")}</div>
+    <table class="rt"><tr><th>${L("단계","Step")}</th><th>${L("팀","Team")}</th><th>${L("실제","Actual")}</th><th>${L("추천 1순위","Top rec.")}</th><th>${L("순위","Rank")}</th><th>${L("놓친","Missed")}</th></tr>${pr}</table>`;
   document.querySelectorAll(".picker tr.cl").forEach(t=>t.onclick=()=>rpGo(+t.dataset.st));
 }
 const PICKER_HTML=document.querySelector(".picker").innerHTML;
@@ -379,7 +438,7 @@ function leaveReplay(){
   if(MODE!=="replay") return; MODE="sim";
   document.querySelector(".picker").innerHTML=PICKER_HTML;
   document.querySelector(".toggle").style.display=""; $("#undoBtn").style.display="";
-  $("#q").oninput=renderGrid; initRoles();
+  $("#q").oninput=renderGrid; initRoles(); applyStatic();
 }
 
 // ---------------- 밴픽 판
@@ -389,22 +448,22 @@ function renderBoard(){
     const mine=s.steps.filter(x=>x.team===team);
     const bans=mine.filter(x=>x.action==="ban"), picks=mine.filter(x=>x.action==="pick");
     const lu=s.lineup[team]||{};
-    const banH=bans.map(b=>`<div class="ban ${b.cid?"f":""} ${b.step===cur?"cur":""}" style="${b.cid?`background-image:url(${sq(b.cid)})`:""}" title="${esc(b.name||"")}"></div>`).join("");
+    const banH=bans.map(b=>`<div class="ban ${b.cid?"f":""} ${b.step===cur?"cur":""}" style="${b.cid?`background-image:url(${sq(b.cid)})`:""}" title="${esc(ko(b.cid))}"></div>`).join("");
     const pickH=picks.map(p=>{
       const pl=p.role?lu[p.role]:null;
       return `<div class="slot ${p.cid?"":"empty"} ${p.step===cur?"cur":""}" style="${p.cid?`background-image:url(${ld(p.cid)})`:""}">
-        ${p.cid?`<span class="ro">${META.pos_ko[p.role]||""}</span><div class="pl">${esc(pl||"")}</div><div class="ch">${esc(p.name)}</div><div class="us"></div>`:`<div class="pl">${p.step===cur&&!s.replay?"선택 중":""}</div>`}</div>`}).join("");
+        ${p.cid?`<span class="ro">${posl(p.role)}</span><div class="pl">${esc(pl||"")}</div><div class="ch">${esc(ko(p.cid))}</div><div class="us"></div>`:`<div class="pl">${p.step===cur&&!s.replay?L("선택 중","picking"):""}</div>`}</div>`}).join("");
     return `<div class="side ${cls}"><div class="teamname"><span class="bar" style="background:${color(team)}"></span><span class="n">${esc(team)}</span><span class="tag">${cls==="blue"?"BLUE SIDE":"RED SIDE"}${s.fp===team?" · 1ST PICK":""}</span></div>
       <div class="bans">${cls==="red"?banH+'<span class="lbl">BAN</span>':'<span class="lbl">BAN</span>'+banH}</div><div class="picks">${pickH}</div></div>`;
   };
   const lg=t=>(META.teams.find(x=>x.name===t)||{}).logo;
-  const dots=s.steps.map(x=>`<span class="dot ${x.cid?(x.team===s.blue?"blue":"red"):""} ${x.action==="ban"?"ban":""} ${x.step===cur?"cur":""} ${s.replay?"click":""}" data-st="${x.step}" title="${x.step}단계 ${x.team} ${x.action==="ban"?"밴":"픽"} ${esc(x.name||"")}"></span>`).join("");
+  const dots=s.steps.map(x=>`<span class="dot ${x.cid?(x.team===s.blue?"blue":"red"):""} ${x.action==="ban"?"ban":""} ${x.step===cur?"cur":""} ${s.replay?"click":""}" data-st="${x.step}" title="${stepTxt(x.step)} ${x.team} ${BP(x.action)} ${esc(ko(x.cid))}"></span>`).join("");
   const mid=`<div class="mid">
-    <div class="setno">${s.setText||`${s.set}세트 · 피어리스 ${s.fearless.length}개 잠김`}</div>
+    <div class="setno">${s.setText||L(`${s.set}세트 · 피어리스 ${s.fearless.length}개 잠김`,`Game ${s.set} · ${s.fearless.length} fearless-locked`)}</div>
     <div class="logos"><div class="logo blue" style="${lg(s.blue)?`background-image:url(${lg(s.blue)})`:""}">${lg(s.blue)?"":short(s.blue)}</div><span class="vs">VS</span><div class="logo red" style="${lg(s.red)?`background-image:url(${lg(s.red)})`:""}">${lg(s.red)?"":short(s.red)}</div></div>
-    <div class="phase">${PHASES.map(p=>`<span class="${cur&&phaseOf(cur)===p[0]?"on":""}">${p[0]}</span>`).join("")}</div>
+    <div class="phase">${PHASES.map(p=>`<span class="${cur&&phaseOf(cur)===p[0]?"on":""}">${phl(p[0])}</span>`).join("")}</div>
     <div class="dots">${dots}</div>
-    <div class="elo">${s.midText||`Elo ${short(s.blue)} ${s.elo[s.blue]} · ${short(s.red)} ${s.elo[s.red]}<br>패치 26.16 · 가상 08-26`}</div></div>`;
+    <div class="elo">${s.midText||`Elo ${short(s.blue)} ${s.elo[s.blue]} · ${short(s.red)} ${s.elo[s.red]}<br>${L("패치 26.16 · 가상 08-26","Patch 26.16 · simulated 08-26")}`}</div></div>`;
   $("#board").innerHTML=sideHTML(s.blue,"blue")+mid+sideHTML(s.red,"red");
   if(s.replay) $("#board").querySelectorAll(".dot.click").forEach(d=>d.onclick=()=>rpGo(+d.dataset.st));
 }
@@ -412,16 +471,16 @@ function renderBoard(){
 // ---------------- 머리
 function renderTop(){
   const s=ST;
-  if(s.done){$("#eye").textContent="드래프트 끝";$("#h1").innerHTML=`<span class="t">${s.set}세트</span> 결과`}
+  if(s.done){$("#eye").textContent=L("드래프트 끝","Draft complete");$("#h1").innerHTML=L(`<span class="t">${s.set}세트</span> 결과`,`<span class="t">Game ${s.set}</span> result`)}
   else{
-    const what=s.action==="ban"?"밴":"픽";
-    $("#eye").textContent=`${s.step} / 20 단계 · ${short(s.team)} ${what}`;
-    $("#h1").innerHTML=s.us_turn?`<span class="t">T1</span> ${what} 차례 — M5 추천 <span class="badge">${phaseOf(s.step)}${s.pair_turn?" · 두 장 연속":""}</span>`
-      :`${esc(s.team)} ${what} 차례 <span class="badge">M4 상대 예측</span>`;
+    const what=BP(s.action);
+    $("#eye").textContent=L(`${s.step} / 20 단계 · ${short(s.team)} ${what}`,`Step ${s.step} / 20 · ${short(s.team)} ${what}`);
+    $("#h1").innerHTML=s.us_turn?L(`<span class="t">T1</span> ${what} 차례 — M5 추천`,`<span class="t">T1</span> ${what} — M5 recommendations`)+` <span class="badge">${phl(phaseOf(s.step))}${s.pair_turn?L(" · 두 장 연속"," · double pick"):""}</span>`
+      :L(`${esc(s.team)} ${what} 차례`,`${esc(s.team)} ${what}`)+` <span class="badge">${L("M4 상대 예측","M4 opponent forecast")}</span>`;
   }
   $("#winNow").textContent=pct(s.win_now);
-  $("#winBase").textContent=`지금까지 픽 기준 T1 승률 · 실력 차·진영만 ${pct(s.win_base)}`;
-  $("#pickWho").textContent=s.done?"":(s.us_turn?"→ T1 ":"→ "+short(s.team)+" ")+(s.done?"":(s.action==="ban"?"밴":"픽"));
+  $("#winBase").textContent=L(`지금까지 픽 기준 T1 승률 · 실력 차·진영만 ${pct(s.win_base)}`,`T1 win rate with picks so far · strength & side only ${pct(s.win_base)}`);
+  $("#pickWho").textContent=s.done?"":(s.us_turn?"→ T1 ":"→ "+short(s.team)+" ")+BP(s.action);
 }
 
 // ---------------- 추천 카드
@@ -429,48 +488,54 @@ function cardHTML(c,i,act){
   const parts=act==="pick"?[["own",c.own],["deny",c.deny],["resp",c.resp_delta]]:[["deny",c.threat],["resp",c.resp_delta]];
   const tot=parts.reduce((a,[,v])=>a+Math.abs(v),0)||1;
   const seg=parts.map(([k,v])=>`<i style="width:${(Math.abs(v)/tot*100).toFixed(1)}%;background:var(--${k})"></i>`).join("");
-  const sub=act==="pick"?`${esc(c.role_ko)} · ${esc(c.player||"")} · 평소 고를 확률 ${pct(c.habit)}`:`상대가 남은 픽에서 고를 확률 ${pct(c.p_opp,0)} · T1 평소 밴 ${pct(c.habit,0)}`;
-  const nums=act==="pick"?`조합 <b>${sgn(c.own)}%p</b> · 뺏기 <b>${sgn(c.deny)}%p</b> · 응수 <b>${sgn(c.resp_delta,2)}%p</b>`
-    :`위협도 <b>${sgn(c.threat,2)}%p</b> · 응수 반영 <b>${sgn(c.resp_delta,2)}%p</b>`;
-  const resp=c.resp?`<div class="resp">상대 다음 ${c.resp.action==="ban"?"밴":"픽"} 예상 ${c.resp.top.map(r=>`<span class="r"><img src="${sq(r.cid)}" title="${esc(r.name)}">${pct(r.p,0)}</span>`).join("")}</div>`:"";
-  const chips=c.chips.length?`<div class="chips">${c.chips.map(([k,v])=>`<div class="chip"><span class="k ${esc(k)}">${esc(k)}</span><span>${esc(v)}</span></div>`).join("")}</div>`:"";
-  const tl=act==="pick"&&c.early!=null?`<div class="dl">이길 가치 ${sgn(c.wv)}%p (초반 ${sgn(c.early)} · 후반 ${sgn(c.late)})</div>`:"";
-  return `<div class="card"><div class="art"><img class="bg" alt="" src="${cen(c.cid)}" data-fb="${spl(c.cid)}|${ld(c.cid)}" onerror="fb(this)"><span class="rank">${i+1}순위</span>${c.tie?`<span class="tie">동점권${c.value_best?" · 승률 최고":""}</span>`:""}
-    <div class="hd"><div class="nm">${esc(c.name)}</div><div class="pct num">${pct(c.win)}</div></div></div>
+  const sub=act==="pick"?`${esc(posl(c.role))} · ${esc(c.player||"")} · ${L("평소 고를 확률","usual pick rate")} ${pct(c.habit)}`
+    :L(`상대가 남은 픽에서 고를 확률 ${pct(c.p_opp,0)} · T1 평소 밴 ${pct(c.habit,0)}`,`Opponent picks it later: ${pct(c.p_opp,0)} · T1 usually bans it: ${pct(c.habit,0)}`);
+  const nums=act==="pick"?L(`조합 <b>${sgn(c.own)}%p</b> · 뺏기 <b>${sgn(c.deny)}%p</b> · 응수 <b>${sgn(c.resp_delta,2)}%p</b>`,`Own comp <b>${sgn(c.own)} pp</b> · Deny <b>${sgn(c.deny)} pp</b> · Response <b>${sgn(c.resp_delta,2)} pp</b>`)
+    :L(`위협도 <b>${sgn(c.threat,2)}%p</b> · 응수 반영 <b>${sgn(c.resp_delta,2)}%p</b>`,`Threat <b>${sgn(c.threat,2)} pp</b> · Response <b>${sgn(c.resp_delta,2)} pp</b>`);
+  const resp=c.resp?`<div class="resp">${L(`상대 다음 ${BP(c.resp.action)} 예상`,`Opponent's likely next ${BP(c.resp.action)}`)} ${c.resp.top.map(r=>`<span class="r"><img src="${sq(r.cid)}" title="${esc(ko(r.cid))}">${pct(r.p,0)}</span>`).join("")}</div>`:"";
+  const chips=c.chips.length?`<div class="chips">${c.chips.map(([k,v,ve])=>`<div class="chip"><span class="k ${esc(k)}">${esc(L(k,KIND_EN[k]||k))}</span><span>${esc(L(v,ve||v))}</span></div>`).join("")}</div>`:"";
+  const tl=act==="pick"&&c.early!=null?`<div class="dl">${L(`이길 가치 ${sgn(c.wv)}%p (초반 ${sgn(c.early)} · 후반 ${sgn(c.late)})`,`Win value ${sgn(c.wv)} pp (early ${sgn(c.early)} · late ${sgn(c.late)})`)}</div>`:"";
+  return `<div class="card"><div class="art"><img class="bg" alt="" src="${cen(c.cid)}" data-fb="${spl(c.cid)}|${ld(c.cid)}" onerror="fb(this)"><span class="rank">${L(`${i+1}순위`,`#${i+1}`)}</span>${c.tie?`<span class="tie">${L("동점권","Tie zone")}${c.value_best?L(" · 승률 최고"," · best win rate"):""}</span>`:""}
+    <div class="hd"><div class="nm">${esc(ko(c.cid))}</div><div class="pct num">${pct(c.win)}</div></div></div>
     <div class="bd"><div class="sub">${sub}</div><div class="seg">${seg}</div><div class="nums">${nums}</div>
-    <div class="dl">평소 대비 ${sgn(c.d,2)}%p (±${c.se.toFixed(2)}) · 앞보기 없이 ${sgn(c.d0,2)}</div>${tl}${resp}${chips}
-    <button class="btn gold go" data-cid="${c.cid}">이걸로 ${act==="ban"?"밴":"픽"}</button></div></div>`;
+    <div class="dl">${L(`평소 대비 ${sgn(c.d,2)}%p (±${c.se.toFixed(2)}) · 앞보기 없이 ${sgn(c.d0,2)}`,`vs usual ${sgn(c.d,2)} pp (±${c.se.toFixed(2)}) · without lookahead ${sgn(c.d0,2)}`)}</div>${tl}${resp}${chips}
+    <button class="btn gold go" data-cid="${c.cid}">${act==="ban"?L("이걸로 밴","Ban this"):L("이걸로 픽","Pick this")}</button></div></div>`;
 }
 function renderPanel(){
   const s=ST, P=$("#panel");
   if(s.done){
-    P.innerHTML=`<h2><span class="t">${s.set}세트</span> 드래프트 끝</h2>
-      <div class="note">완성 조합 기준 T1 예상 승률 <b style="color:var(--gold);font-size:18px">${pct(s.win_now)}</b> (실력 차·진영만 ${pct(s.win_base)}). 세트 결과를 고르면 피어리스로 다음 세트를 시작합니다 (진 팀 선픽, 진영 바꿈 — 가정).</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn gold" data-win="${META.us}">T1 승 → 다음 세트</button><button class="btn" data-win="${esc(s.opp)}">${esc(s.opp)} 승 → 다음 세트</button><button class="btn" id="newBtn">새 경기</button></div>`;
+    P.innerHTML=`<h2><span class="t">${setTxt(s.set)}</span> ${L("드래프트 끝","draft complete")}</h2>
+      <div class="note">${L("완성 조합 기준 T1 예상 승률","T1 expected win rate with the final drafts")} <b style="color:var(--gold);font-size:18px">${pct(s.win_now)}</b> (${L("실력 차·진영만","strength & side only")} ${pct(s.win_base)}). ${L("세트 결과를 고르면 피어리스로 다음 세트를 시작합니다 (진 팀 선픽, 진영 바꿈 — 가정).","Choose the game result to start the next game under fearless rules (assumes the loser gets first pick and sides swap).")}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn gold" data-win="${META.us}">${L("T1 승 → 다음 세트","T1 wins → next game")}</button><button class="btn" data-win="${esc(s.opp)}">${esc(s.opp)} ${L("승 → 다음 세트","wins → next game")}</button><button class="btn" id="newBtn">${L("새 경기","New match")}</button></div>`;
     P.querySelectorAll("[data-win]").forEach(b=>b.onclick=async()=>setState(await api("/api/next_set",{winner:b.dataset.win})));
     $("#newBtn").onclick=openSetup;
     return;
   }
   if(!s.us_turn){
-    const what=s.action==="ban"?"밴":"픽";
-    P.innerHTML=`<h2>${esc(s.team)} <span class="t">${what}</span> — 상대 예측</h2>
-      <div class="note">M4 (고정 모델, 리허설 보정 확률). ${$("#autoOpp").checked?"자동 진행: 1순위를 고릅니다. 다른 걸 고르려면 위 '상대 자동 진행'을 끄세요.":"실제 선택을 아래 목록이나 오른쪽 챔피언 판에서 고르세요."}</div>
-      <div class="pred">${s.pred.map(p=>`<div class="pr" data-cid="${p.cid}"><img src="${sq(p.cid)}"><div style="width:120px">${esc(p.name)}${p.role?` <span class="dl">${META.pos_ko[p.role]}</span>`:""}</div><div class="pb"><i style="width:${Math.min(100,p.p*100/ (s.pred[0].p||1)).toFixed(0)}%"></i></div><div class="p num">${pct(p.p,0)}</div></div>`).join("")}</div>`;
+    const what=BP(s.action);
+    P.innerHTML=`<h2>${esc(s.team)} <span class="t">${what}</span> — ${L("상대 예측","opponent forecast")}</h2>
+      <div class="note">${L("M4 (고정 모델, 리허설 보정 확률).","M4 (frozen model, probabilities calibrated in rehearsal).")} ${$("#autoOpp").checked?L("자동 진행: 1순위를 고릅니다. 다른 걸 고르려면 위 '상대 자동 진행'을 끄세요.","Auto-play takes the top prediction. To enter something else, turn off 'Auto-play opponent' above."):L("실제 선택을 아래 목록이나 오른쪽 챔피언 판에서 고르세요.","Enter the real choice from the list below or the champion grid on the right.")}</div>
+      <div class="pred">${s.pred.map(p=>`<div class="pr" data-cid="${p.cid}"><img src="${sq(p.cid)}"><div style="width:120px">${esc(ko(p.cid))}${p.role?` <span class="dl">${posl(p.role)}</span>`:""}</div><div class="pb"><i style="width:${Math.min(100,p.p*100/ (s.pred[0].p||1)).toFixed(0)}%"></i></div><div class="p num">${pct(p.p,0)}</div></div>`).join("")}</div>`;
     P.querySelectorAll(".pr").forEach(e=>e.onclick=()=>act(e.dataset.cid));
     return;
   }
-  const what=s.action==="ban"?"밴":"픽";
-  P.innerHTML=`<h2><span class="t">T1</span> ${what} 추천</h2><div class="spin">몬테카를로로 남은 드래프트를 굴리는 중 (후보마다 고른 직후 상태로 M4 다시 계산)…</div>`;
+  const what=BP(s.action);
+  P.innerHTML=`<h2><span class="t">T1</span> ${L(`${what} 추천`,`${what} recommendations`)}</h2><div class="spin">${L("몬테카를로로 남은 드래프트를 굴리는 중 (후보마다 고른 직후 상태로 M4 다시 계산)…","Running Monte Carlo rollouts of the rest of the draft (M4 recomputed after each candidate)…")}</div>`;
   if(REC&&REC.step===s.step) drawRec();
 }
 function drawRec(){
   const s=ST, r=REC, P=$("#panel"), kind=r.action;
   const top=r.cards.slice(0,3), more=r.cards.slice(3);
-  const pairH=r.pairs&&r.pairs.length?`<div class="pairs"><h3>두 장 연속 추천 (${s.step}·${s.step+1}단계)</h3>${r.pairs.map(p=>`<div class="pair"><img src="${sq(p.a)}"><img src="${sq(p.b)}"><div><div>${esc(p.a_name)} <span class="dl">${p.a_role}</span> + ${esc(p.b_name)} <span class="dl">${p.b_role}</span></div><div class="c">${p.combo?esc(p.combo):"두 장 고른 뒤 상태로 굴림"} · 평소 대비 ${sgn(p.d,2)}%p</div></div><div class="w num">${pct(p.win)}</div><button class="btn gold" data-a="${p.a}" data-b="${p.b}">이 두 장</button></div>`).join("")}</div>`:"";
-  P.innerHTML=`<h2><span class="t">T1</span> ${kind==="ban"?"밴":"픽"} 추천 <span class="badge">${r.R.toLocaleString()}번 굴림 · ${r.secs}초</span></h2>
-    <div class="note">T1 이 평소대로 할 때 예상 승률 ${pct(r.base_win)} · 큰 숫자 = 이걸 고르고 남은 드래프트를 굴렸을 때 완성 조합 예상 승률${kind==="ban"?" · 밴은 상대 조합 가치를 낮춘 만큼만 셈<br><b>밴 순위는 검증 미통과</b> (학습 밖 301경기: 밴 1순위에서 벗어난 만큼 더 졌다는 근거가 약함, 구간이 0 포함). 상대가 그 챔피언을 고를 확률(위협도의 앞부분)은 실제와 맞음 → 상대 예상 픽 위주로 참고":""}${kind==="pick"&&r.n_tie>1?`<br><b>동점권 ${r.n_tie}개</b> = 예상 승률 차이가 이길 가치 불확실성(1σ) 안 → 그 안에서는 T1 평소 고를 확률 순 (예상 승률 최고: ${esc(r.value_best)})`:""}</div>
+  const pairH=r.pairs&&r.pairs.length?`<div class="pairs"><h3>${L(`두 장 연속 추천 (${s.step}·${s.step+1}단계)`,`Double-pick recommendations (steps ${s.step}–${s.step+1})`)}</h3>${r.pairs.map(p=>`<div class="pair"><img src="${sq(p.a)}"><img src="${sq(p.b)}"><div><div>${esc(ko(p.a))} <span class="dl">${p.a_pos?posl(p.a_pos):p.a_role}</span> + ${esc(ko(p.b))} <span class="dl">${p.b_pos?posl(p.b_pos):p.b_role}</span></div><div class="c">${p.combo?esc(L(p.combo,p.combo_en||p.combo)):L("두 장 고른 뒤 상태로 굴림","rolled out from the state after both picks")} · ${L("평소 대비","vs usual")} ${sgn(p.d,2)}${PP_()}</div></div><div class="w num">${pct(p.win)}</div><button class="btn gold" data-a="${p.a}" data-b="${p.b}">${L("이 두 장","Pick both")}</button></div>`).join("")}</div>`:"";
+  const vb=r.value_best_cid?ko(r.value_best_cid):(r.value_best||"");
+  const banNote=kind==="ban"?L(" · 밴은 상대 조합 가치를 낮춘 만큼만 셈<br><b>밴 순위는 검증 미통과</b> (학습 밖 301경기: 밴 1순위에서 벗어난 만큼 더 졌다는 근거가 약함, 구간이 0 포함). 상대가 그 챔피언을 고를 확률(위협도의 앞부분)은 실제와 맞음 → 상대 예상 픽 위주로 참고",
+    " · a ban only counts how much it lowers the opponent's composition value<br><b>Ban ranking did not pass validation</b> (301 out-of-sample games: weak evidence that deviating from the top ban lost more; interval includes 0). The probability that the opponent picks the champion (first part of threat) matches reality → use it mainly as an opponent-pick forecast"):"";
+  const tieNote=kind==="pick"&&r.n_tie>1?L(`<br><b>동점권 ${r.n_tie}개</b> = 예상 승률 차이가 이길 가치 불확실성(1σ) 안 → 그 안에서는 T1 평소 고를 확률 순 (예상 승률 최고: ${esc(vb)})`,
+    `<br><b>Tie zone of ${r.n_tie}</b> = win-rate gaps within the win-value uncertainty (1σ) → ordered by T1's usual pick rate inside it (highest win rate: ${esc(vb)})`):"";
+  P.innerHTML=`<h2><span class="t">T1</span> ${L(`${BP(kind)} 추천`,`${BP(kind)} recommendations`)} <span class="badge">${L(`${r.R.toLocaleString()}번 굴림 · ${r.secs}초`,`${r.R.toLocaleString()} rollouts · ${r.secs}s`)}</span></h2>
+    <div class="note">${L(`T1 이 평소대로 할 때 예상 승률 ${pct(r.base_win)} · 큰 숫자 = 이걸 고르고 남은 드래프트를 굴렸을 때 완성 조합 예상 승률`,`T1 expected win rate if it drafts as usual: ${pct(r.base_win)} · big number = expected win rate of the final drafts after choosing this and rolling out the rest`)}${banNote}${tieNote}</div>
     <div class="cards">${top.map((c,i)=>cardHTML(c,i,kind)).join("")}</div>
-    ${more.length?`<table class="more"><tr><th>순위</th><th>챔피언</th><th>예상 승률</th><th>평소 대비</th><th>${kind==="pick"?"포지션 · 선수":"상대 고를 확률"}</th></tr>${more.map((c,i)=>`<tr data-cid="${c.cid}"><td>${i+4}</td><td><img src="${sq(c.cid)}">${esc(c.name)}</td><td class="num">${pct(c.win)}</td><td class="num">${sgn(c.d,2)}%p</td><td>${kind==="pick"?esc(c.role_ko+" · "+(c.player||"")):pct(c.p_opp,0)}</td></tr>`).join("")}</table>`:""}
+    ${more.length?`<table class="more"><tr><th>${L("순위","Rank")}</th><th>${L("챔피언","Champion")}</th><th>${L("예상 승률","Win rate")}</th><th>${L("평소 대비","vs usual")}</th><th>${kind==="pick"?L("포지션 · 선수","Role · player"):L("상대 고를 확률","Opp. pick odds")}</th></tr>${more.map((c,i)=>`<tr data-cid="${c.cid}"><td>${i+4}</td><td><img src="${sq(c.cid)}">${esc(ko(c.cid))}</td><td class="num">${pct(c.win)}</td><td class="num">${sgn(c.d,2)}${PP_()}</td><td>${kind==="pick"?esc(posl(c.role)+" · "+(c.player||"")):pct(c.p_opp,0)}</td></tr>`).join("")}</table>`:""}
     ${pairH}`;
   P.querySelectorAll(".go,tr[data-cid]").forEach(b=>b.onclick=()=>act(b.dataset.cid));
   P.querySelectorAll("[data-a]").forEach(b=>b.onclick=async()=>{await act(b.dataset.a,true);await act(b.dataset.b)});
@@ -480,8 +545,9 @@ function drawRec(){
 function renderGrid(){
   const s=ST, gone=new Set([...s.steps.filter(x=>x.cid).map(x=>x.cid),...s.fearless]);
   const q=$("#q").value.trim().toLowerCase();
-  const list=META.champs.filter(c=>(ROLE==="ALL"||c.roles.includes(ROLE))&&(!q||c.ko.includes(q)||c.id.toLowerCase().includes(q)));
-  $("#grid").innerHTML=list.map(c=>`<button class="cg ${gone.has(c.id)||s.done?"x":""}" data-cid="${c.id}" title="${esc(c.ko)}"><img loading="lazy" src="${sq(c.id)}" alt=""><span>${esc(c.ko)}</span></button>`).join("");
+  let list=META.champs.filter(c=>(ROLE==="ALL"||c.roles.includes(ROLE))&&(!q||c.ko.includes(q)||c.id.toLowerCase().includes(q)||(c.en||"").toLowerCase().includes(q)));
+  if(LANG==="en") list=list.slice().sort((a,b)=>(a.en||a.id).localeCompare(b.en||b.id));
+  $("#grid").innerHTML=list.map(c=>`<button class="cg ${gone.has(c.id)||s.done?"x":""}" data-cid="${c.id}" title="${esc(ko(c.id))}"><img loading="lazy" src="${sq(c.id)}" alt=""><span>${esc(ko(c.id))}</span></button>`).join("");
   $("#grid").querySelectorAll(".cg").forEach(b=>b.onclick=()=>act(b.dataset.cid));
 }
 $("#q").oninput=renderGrid;
@@ -489,7 +555,7 @@ $("#q").oninput=renderGrid;
 // ---------------- 진행
 async function act(cid,noFollow){
   if(busy) return; busy=true;
-  try{ const s=await api("/api/act",{cid}); toast(`${ST.step}단계 ${short(ST.team)} ${ST.action==="ban"?"밴":"픽"} → ${ko(cid)}`); setState(s,noFollow);}
+  try{ const s=await api("/api/act",{cid}); toast(L(`${ST.step}단계 ${short(ST.team)} ${BP(ST.action)} → ${ko(cid)}`,`Step ${ST.step}: ${short(ST.team)} ${BP(ST.action)} → ${ko(cid)}`)); setState(s,noFollow);}
   catch(e){toast(e.message)} finally{busy=false}
 }
 $("#undoBtn").onclick=async()=>{clearTimeout(autoTimer);setState(await api("/api/undo",{}),false,true)};
@@ -505,10 +571,11 @@ async function follow(){
   const step=s.step; try{ const r=await api("/api/rec"); if(ST.step===step&&ST===s){REC=r;drawRec()} }catch(e){toast(e.message)}
 }
 function initRoles(){
-  $("#roles").innerHTML=[["ALL","전체"],...META.pos.map(p=>[p,META.pos_ko[p]])].map(([k,v])=>`<button data-r="${k}" class="${k===ROLE?"on":""}">${v}</button>`).join("");
+  $("#roles").innerHTML=[["ALL",L("전체","All")],...META.pos.map(p=>[p,posl(p)])].map(([k,v])=>`<button data-r="${k}" class="${k===ROLE?"on":""}">${v}</button>`).join("");
   $("#roles").querySelectorAll("button").forEach(b=>b.onclick=()=>{ROLE=b.dataset.r;$("#roles").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));renderGrid()});
 }
 (async()=>{
+  applyStatic();
   META=await api("/api/meta");
   initRoles();
   const s=await api("/api/state");

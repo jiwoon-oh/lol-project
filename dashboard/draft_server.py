@@ -69,11 +69,14 @@ def meta():
         sh = {r: sim.ds.role_share[r].get(c, 0) for r in MD.POS}
         tot = sum(sh.values()) or 1
         roles = [r for r, v in sorted(sh.items(), key=lambda kv: -kv[1]) if v / tot >= 0.1]
-        champs.append({"id": c, "ko": sim.ko(c), "roles": roles})
+        champs.append({"id": c, "ko": sim.ko(c), "en": D.en(c), "roles": roles})
     champs.sort(key=lambda x: x["ko"])
     teams = [{"name": t, "logo": logos.get(t, {}).get("url"), "elo": round(D.elo.get(t, 1500))} for t in [MD.US] + MD.LCK_TEAMS]
     return {"ddragon": ko.get("ddragon_version"), "champs": champs, "teams": teams, "us": MD.US,
-            "pos": MD.POS, "pos_ko": MD.ROLE_KO, "day": "2026-08-26", "R": sim.mc}
+            "pos": MD.POS, "pos_ko": MD.ROLE_KO, "pos_en": POS_EN, "day": "2026-08-26", "R": sim.mc}
+
+
+POS_EN = {"TOP": "Top", "JUNGLE": "Jungle", "MIDDLE": "Mid", "BOTTOM": "ADC", "UTILITY": "Support"}
 
 
 class H(BaseHTTPRequestHandler):

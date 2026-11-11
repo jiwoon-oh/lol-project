@@ -364,18 +364,18 @@ class Sim:
             for c in cand:
                 ro, _ = self.role_for(c, open_[US])
                 w = self.wv_pp(c, ro)
-                cnt, vs = 0.0, ""
+                cnt, vs, vs_cid = 0.0, "", ""
                 for q, qr in picks[opp]:
                     if qr == ro:   # 상성 표는 쌍마다 한 방향만 저장 → 반대 방향은 부호를 바꿈
                         x, y = f"{c}@{ro}", f"{q}@{qr}"
                         cnt = self.counter.get((x, y), -self.counter.get((y, x), 0.0))
-                        vs = self.ko(q)
+                        vs, vs_cid = self.ko(q), q
                 ro_o, _ = self.role_for(c, open_[opp])
                 deny = p_next.get(c, 0.0) * (BASE_PP + max(self.wv_pp(c, ro_o), 0))
                 early, late = self.timing(c, ro)
                 lo, hi = self.ci(c, ro)
                 rows.append({"cid": c, "name": self.ko(c), "role": ROLE_KO.get(ro, ""), "score": w + deny,   # 상성은 점수에 안 넣음 (근거 칸만, m5_counter 리허설: 승패에 더하면 대회 예측이 나빠짐)
-                             "wv": w, "counter": cnt, "vs": vs, "deny": deny, "p_opp_next": p_next.get(c, 0.0),
+                             "wv": w, "counter": cnt, "vs": vs, "vs_cid": vs_cid, "deny": deny, "p_opp_next": p_next.get(c, 0.0),
                              "p_us_habit": p_us[c], "early": early, "late": late, "lo": lo, "hi": hi})
         return pd.DataFrame(rows).sort_values("score", ascending=False).reset_index(drop=True)
 

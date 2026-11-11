@@ -73,12 +73,21 @@ class Draft:
         self.combo = {}
         for r in syn.itertuples():
             a_, b_ = r.key.split("+")
-            txt = f"검증된 조합 · 듀오 15분 골드 {r.duo_gold:+.0f}" if pd.notna(r.duo_gold) else "의미 있는 시너지"
+            txt = ((f"검증된 조합 · 듀오 15분 골드 {r.duo_gold:+.0f}", f"proven combo · duo gold @15 {r.duo_gold:+.0f}")
+                   if pd.notna(r.duo_gold) else ("의미 있는 시너지", "meaningful synergy"))
             self.combo[(a_, b_)] = self.combo[(b_, a_)] = txt
         for r in fav.itertuples():
             a_, b_ = r.key.split("+")
-            self.combo.setdefault((a_, b_), f"프로가 자주 묶음 (우연의 {r.lift:.1f}배)")
-            self.combo.setdefault((b_, a_), f"프로가 자주 묶음 (우연의 {r.lift:.1f}배)")
+            txt = (f"프로가 자주 묶음 (우연의 {r.lift:.1f}배)", f"often paired by pros ({r.lift:.1f}× chance)")
+            self.combo.setdefault((a_, b_), txt)
+            self.combo.setdefault((b_, a_), txt)
+        # 영어 표시 이름 (대시보드 한/영 전환): champ_ko.json 은 Data Dragon id("LeeSin")와 표시 이름("Lee Sin")을 둘 다 키로 가짐
+        names = json.loads((H.ROOT / "dashboard" / "career" / "champ_ko.json").read_text(encoding="utf-8"))["names"]
+        by_ko = {}
+        for k, v in names.items():
+            by_ko.setdefault(v, []).append(k)
+        self.en_names = {c: next((k for k in by_ko.get(names.get(c), []) if k != c), c) for c in self.sim.champs}
+        self.en = lambda c: self.en_names.get(c, c)
         self.opp = None
         self.rec_cache = {}
         log.info("밴픽 엔진 준비 (%.0f초)", time.time() - t0)
@@ -256,36 +265,42 @@ class Draft:
                             tie=bool(x.get("tie", False)), value_best=bool(x.get("value_best", False)))
                 rk = self._pool_rank(pl, c)
                 if rk:
-                    card["chips"].append(("주력", f"{pl}의 {rk}순위 챔피언"))
+                    card["chips"].append(("주력", f"{pl}의 {rk}순위 챔피언", f"{pl}'s #{rk} champion"))
                 sk = sim.skill_of(US, c, ro)
                 if sk and abs(sk[1]) >= 100 and sk[3] + sk[4] >= 5:
-                    card["chips"].append(("숙련" if sk[1] > 0 else "숙련 약함", f"{pl} 15분 골드 {sk[1]:+.0f} ({sk[3]}+{sk[4]}판)"))
+                    card["chips"].append(("숙련" if sk[1] > 0 else "숙련 약함", f"{pl} 15분 골드 {sk[1]:+.0f} ({sk[3]}+{sk[4]}판)",
+                                         f"{pl} gold @15 {sk[1]:+.0f} ({sk[3]}+{sk[4]} games)"))
                 for q, qr in picks[US]:
                     t_ = self.combo.get((f"{c}@{ro}", f"{q}@{qr}"))
                     if t_:
-                        card["chips"].append(("조합", f"{sim.ko(q)} 짝 — {t_}"))
+                        card["chips"].append(("조합", f"{sim.ko(q)} 짝 — {t_[0]}", f"with {self.en(q)} — {t_[1]}"))
                 if x.get("vs"):
-                    card["chips"].append(("상성", f"vs {x['vs']} 15분 골드 환산 {x['counter']:+.1f}%p (근거)"))
+                    card["chips"].append(("상성", f"vs {x['vs']} 15분 골드 환산 {x['counter']:+.1f}%p (근거)",
+                                         f"vs {self.en(x.get('vs_cid')) if x.get('vs_cid') else x['vs']}: gold @15 as {x['counter']:+.1f} pp (evidence only)"))
                 who = self._opp_main(c, op[opp])
                 if who and card["p_opp"] >= 0.05:
-                    card["chips"].append(("뺏기", f"{who[0]} 주력 {who[1]}순위 · 고를 확률 {card['p_opp']:.0%}"))
+                    card["chips"].append(("뺏기", f"{who[0]} 주력 {who[1]}순위 · 고를 확률 {card['p_opp']:.0%}",
+                                         f"{who[0]}'s #{who[1]} · {card['p_opp']:.0%} to pick it"))
                 card["early"], card["late"] = (None if pd.isna(x.get("early")) else float(x["early"])), (None if pd.isna(x.get("late")) else float(x["late"]))
                 card["wv"] = float(x["wv"])
             else:
                 card.update(own=0.0, tie=bool(x["tie"]), threat=float(x["threat"]))
                 sk = x.get("skill_opp")
                 if sk:
-                    card["chips"].append(("상대 숙련", f"{sk[0]} 15분 골드 {sk[1]:+.0f} ({sk[3]}+{sk[4]}판)"))
+                    card["chips"].append(("상대 숙련", f"{sk[0]} 15분 골드 {sk[1]:+.0f} ({sk[3]}+{sk[4]}판)",
+                                         f"{sk[0]} gold @15 {sk[1]:+.0f} ({sk[3]}+{sk[4]} games)"))
                 who = self._opp_main(c, op[opp])
                 if who:
-                    card["chips"].append(("상대 주력", f"{who[0]}의 {who[1]}순위"))
+                    card["chips"].append(("상대 주력", f"{who[0]}의 {who[1]}순위", f"{who[0]}'s #{who[1]}"))
                 if card["p_opp"] >= 0.05:
-                    card["chips"].append(("상대 확률", f"상대가 남은 픽에서 고를 확률 {card['p_opp']:.0%}"))
+                    card["chips"].append(("상대 확률", f"상대가 남은 픽에서 고를 확률 {card['p_opp']:.0%}",
+                                         f"{card['p_opp']:.0%} chance the opponent picks it later"))
             cards.append(card)
         out = {"step": step, "action": ac, "base_win": float(rec.attrs["mc_base"]) / 100, "R": int(rec.attrs.get("R", sim.mc)),
                "cards": cards, "pairs": [], "secs": 0.0,
                "n_tie": int(rec["tie"].sum()) if ac == "pick" and "tie" in rec else None,
-               "value_best": (sim.ko(rec.loc[rec["value_best"], "cid"].iloc[0]) if ac == "pick" and "value_best" in rec and rec["value_best"].any() else None)}
+               "value_best": (sim.ko(rec.loc[rec["value_best"], "cid"].iloc[0]) if ac == "pick" and "value_best" in rec and rec["value_best"].any() else None),
+               "value_best_cid": (rec.loc[rec["value_best"], "cid"].iloc[0] if ac == "pick" and "value_best" in rec and rec["value_best"].any() else None)}
         if ac == "pick" and step + 1 <= 20 and self.team_of(step + 1) == US and V6.ORDER[step][0] == "pick":
             out["pairs"] = self._pairs([cd["cid"] for cd in cards[:6]], step, op, out["base_win"])
         out["secs"] = round(time.time() - t0, 1)
@@ -323,5 +338,6 @@ class Draft:
                 wp = sim.roll(FP, step + 2, self.fp, self.lp, d2, R, 0)[0]
                 k1, k2 = f"{c1}@{r1}", f"{c2}@{r2}"
                 res.append({"a": c1, "b": c2, "a_name": sim.ko(c1), "b_name": sim.ko(c2), "a_role": ROLE_KO[r1], "b_role": ROLE_KO[r2],
-                            "win": float(wp.mean()), "d": float(wp.mean() - base) * 100, "combo": self.combo.get((k1, k2))})
+                            "a_pos": r1, "b_pos": r2, "win": float(wp.mean()), "d": float(wp.mean() - base) * 100,
+                            "combo": (self.combo.get((k1, k2)) or (None, None))[0], "combo_en": (self.combo.get((k1, k2)) or (None, None))[1]})
         return sorted(res, key=lambda r: -r["win"])[:5]
