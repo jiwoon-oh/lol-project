@@ -5,6 +5,12 @@ T1 전력분석관 입장에서 **상대 팀이 무엇을 밴·픽할지 예측�
 
 ---
 
+## 추천 시스템 시연
+
+https://github.com/user-attachments/assets/038c93a7-49ab-4e1a-b793-719dc9e077c9
+
+---
+
 ## Summary
 
 ### 무엇을 분석하고 싶었나
