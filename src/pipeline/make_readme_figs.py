@@ -26,9 +26,10 @@ ROOT = Path(__file__).resolve().parents[2]
 P = ROOT / "data" / "processed" / "2026"
 OUT = ROOT / "docs" / "img"
 
-# 기준 팔레트 (dataviz references/palette.md, light) — 파랑 = 이 프로젝트 방법, 주황 = 예전 방식, 회색 = 기준선·미통과
-BLUE, ORANGE, GRAY = "#2a78d6", "#eb6834", "#a3a19b"
-INK, INK2, GRID, SURF = "#0b0b0b", "#52514e", "#e6e5e0", "#fcfcfb"
+# 포트폴리오 케이스 스터디 팔레트 (2026-11-11, 따뜻한 회색 배경 + 테라코타 강조)
+# 변수 이름은 예전 그대로: BLUE = 이 프로젝트 방법(강조, 테라코타), ORANGE = 예전 방식(진한 회색), GRAY = 기준선·미통과
+BLUE, ORANGE, GRAY = "#B0472E", "#3D3C39", "#A8A399"
+INK, INK2, GRID, SURF = "#262626", "#666460", "#D6D3CC", "#E7E5E0"
 plt.rcParams.update({
     "font.family": ["Segoe UI", "Malgun Gothic", "DejaVu Sans"], "axes.unicode_minus": False, "font.size": 11,
     "axes.edgecolor": GRID, "axes.labelcolor": INK2, "xtick.color": INK2, "ytick.color": INK2,
